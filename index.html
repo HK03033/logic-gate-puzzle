@@ -371,20 +371,31 @@
     function handleGateMouseDown(e, gateElement) {
         if (isWiring) cancelWiring();
         isDragging = true;
-        
+
+        // --- ツールボックスからは「移動」なので消す ---
         if (gateElement.closest('#gate-toolbox')) {
             const type = gateElement.getAttribute('data-type');
-            const id = `user_gate_${Date.now()}`;
+            const id = gateElement.getAttribute('data-id'); // 固定IDを使う
+            // ツールボックスから消す
+            gateElement.closest('svg').parentElement.remove();
+
+            // キャンバスのサイズ取得
+            const canvasRect = circuitCanvasEl.getBoundingClientRect();
+            // ゲートサイズ
+            const gateWidth = 80, gateHeight = (type === 'NOT' ? 40 : 60);
+            // キャンバスの中心座標（SVG座標系に変換）
+            const centerX = canvasRect.width / 2 - gateWidth / 2;
+            const centerY = canvasRect.height / 2 - gateHeight / 2;
+
+            // 新しいゲートを作成
             const newGateEl = createGateElement(type, id, false);
             circuitCanvasEl.appendChild(newGateEl);
             draggedElement = newGateEl;
-            
-            const pos = getMousePosition(e);
-            const initialX = pos.x - 40;
-            const initialY = pos.y - 30;
-            userCircuit.gates.push({type, id, x: initialX, y: initialY});
-            newGateEl.setAttribute('transform', `translate(${initialX}, ${initialY})`);
-            offset = { x: 40, y: 30 };
+
+            userCircuit.gates.push({type, id, x: centerX, y: centerY});
+            newGateEl.setAttribute('transform', `translate(${centerX}, ${centerY})`);
+            // ドラッグ開始時のオフセットを中心に
+            offset = { x: (getMousePosition(e).x - centerX), y: (getMousePosition(e).y - centerY) };
         } else {
             draggedElement = gateElement;
             const pos = getMousePosition(e);
@@ -397,12 +408,20 @@
         document.addEventListener('mousemove', onMouseMoveForDragging);
         document.addEventListener('mouseup', onMouseUpForDragging);
     }
-    
+
     function onMouseMoveForDragging(e) {
         if (!isDragging) return;
         e.preventDefault();
         const pos = getMousePosition(e);
-        draggedElement.setAttribute('transform', `translate(${pos.x - offset.x}, ${pos.y - offset.y})`);
+        // キャンバスのサイズ取得
+        const canvasRect = circuitCanvasEl.getBoundingClientRect();
+        // ゲートサイズ
+        const type = draggedElement.getAttribute('data-type');
+        const gateWidth = 80, gateHeight = (type === 'NOT' ? 40 : 60);
+        // キャンバス内に収める
+        let newX = Math.max(0, Math.min(pos.x - offset.x, canvasRect.width - gateWidth));
+        let newY = Math.max(0, Math.min(pos.y - offset.y, canvasRect.height - gateHeight));
+        draggedElement.setAttribute('transform', `translate(${newX}, ${newY})`);
     }
 
     function onMouseUpForDragging(e) {
@@ -444,14 +463,12 @@
             const startType = getPinType(wiringStartPin.dataset.id);
             const endType = getPinType(endPin.dataset.id);
             
-            // ...existing code...
-        if (startType !== 'unknown' && endType !== 'unknown' && startType !== endType) {
+            if (startType !== 'unknown' && endType !== 'unknown' && startType !== endType) {
              const fromPinId = startType === 'output' ? wiringStartPin.dataset.id : endPin.dataset.id;
              const toPinId = startType === 'input' ? wiringStartPin.dataset.id : endPin.dataset.id;
             userCircuit.wires.push({ from: fromPinId, to: toPinId });
             drawUserWires();
         }
-// ...existing code...
             
             cancelWiring();
         }
