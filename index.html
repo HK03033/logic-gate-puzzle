@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -307,12 +306,11 @@
     }
     function createPinElement(id, cx, cy) {
         const pin = document.createElementNS(SVG_NS, 'circle');
-        pin.setAttribute('class', 'pin');
+        pin.setAttribute('class', 'pin fill-slate-400 hover:fill-sky-400');
         pin.setAttribute('data-id', id);
         pin.setAttribute('cx', cx);
         pin.setAttribute('cy', cy);
         pin.setAttribute('r', 5);
-        pin.setAttribute('class', 'fill-slate-400 hover:fill-sky-400');
         return pin;
     }
     function createNode(id, type, x, y) {
