@@ -444,13 +444,14 @@
             const startType = getPinType(wiringStartPin.dataset.id);
             const endType = getPinType(endPin.dataset.id);
             
-            if (startType !== 'unknown' && endType !== 'unknown' && startType !== endType) {
-                const fromPinId = startType === 'output' ? wiringStartPin.dataset.id : endPin.dataset.id;
-                const toPinId = startType === 'input' ? wiringStartPin.dataset.id : endPin.dataset.id;
-                userCircuit.wires = userCircuit.wires.filter(w => w.to !== toPinId);
-                userCircuit.wires.push({ from: fromPinId, to: toPinId });
-                drawUserWires();
-            }
+            // ...existing code...
+        if (startType !== 'unknown' && endType !== 'unknown' && startType !== endType) {
+             const fromPinId = startType === 'output' ? wiringStartPin.dataset.id : endPin.dataset.id;
+             const toPinId = startType === 'input' ? wiringStartPin.dataset.id : endPin.dataset.id;
+            userCircuit.wires.push({ from: fromPinId, to: toPinId });
+            drawUserWires();
+        }
+// ...existing code...
             
             cancelWiring();
         }
