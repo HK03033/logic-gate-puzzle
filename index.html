@@ -100,6 +100,7 @@
 
     let currentStageData = {}; // 現在のステージの問題データを保持
     let userCircuit = { gates: [], wires: [] }; // ユーザーが作成した回路
+    let savedRandomStageData = null; // ★追加：ランダム問題の保存用
 
     // ドラッグ＆ドロップ関連の変数
     let isDragging = false;
@@ -147,11 +148,16 @@
         userCircuit = { gates: [], wires: [] };
         circuitCanvasEl.innerHTML = '';
         if (isWiring) cancelWiring();
-        
+
         if (level <= 2) {
             currentStageData = getFixedStage(level);
+            savedRandomStageData = null; // 固定問題のときはリセット
         } else {
-            currentStageData = generateRandomStage(level);
+            // ★3問目以降は、既に保存済みならそれを使う
+            if (!savedRandomStageData) {
+                savedRandomStageData = generateRandomStage(level);
+            }
+            currentStageData = savedRandomStageData;
         }
 
         stageTitleEl.textContent = `ステージ ${level}`;
@@ -582,6 +588,7 @@
         if (allPatternsPass) {
             score += 10 * stageLevel;
             stageLevel++;
+            savedRandomStageData = null; // ★次の問題に進むときは新しいランダム問題を生成
             showModal(`正解！+${10 * (stageLevel-1)}点！ 次のステージに進みます。`);
             loadStage(stageLevel);
         } else {
