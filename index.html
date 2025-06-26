@@ -29,6 +29,7 @@
         /* メッセージモーダルのスタイル */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
         .modal-content { background-color: #1f2937; color: #f1f5f9; margin: auto; padding: 20px; border: 1px solid #334155; width: 80%; max-width: 400px; border-radius: 8px; text-align: center; }
+        .modal-content.large { max-width: 600px; } /* 解説用にもう少し広く */
         .modal-button { background-color: #0ea5e9; color: white; padding: 10px 20px; margin-top: 15px; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.15s; }
         .modal-button:hover { background-color: #0284c7; }
     </style>
@@ -36,7 +37,6 @@
 <body class="bg-slate-900 text-slate-100 flex flex-col items-center justify-center min-h-screen p-2 md:p-4">
 
     <div class="w-full max-w-6xl bg-slate-800 shadow-2xl rounded-xl p-4 md:p-6">
-        <!-- ヘッダーエリア -->
         <header class="mb-4 text-center md:flex md:justify-between md:items-center">
             <div>
                 <h1 class="text-2xl md:text-3xl font-bold text-sky-400">論理ゲートパズル</h1>
@@ -47,25 +47,20 @@
             </div>
         </header>
 
-        <!-- メインコンテンツエリア -->
         <div class="flex flex-col md:flex-row gap-4">
-            <!-- 左パネル：問題とツールボックス -->
             <div class="md:w-1/4 flex flex-col gap-4">
-                <!-- 問題説明エリア -->
                 <div class="bg-slate-700 p-4 rounded-lg shadow">
                     <h3 class="text-lg font-semibold mb-2 text-sky-300">課題</h3>
                     <div id="problem-description"></div>
                 </div>
-                <!-- ゲートツールボックスエリア -->
                 <div id="gate-toolbox" class="gate-toolbox p-4 rounded-lg shadow flex-grow">
                     <h3 class="text-lg font-semibold mb-3 text-sky-300">ゲートツールボックス</h3>
                     <div id="gate-toolbox-items" class="grid grid-cols-2 gap-2">
-                        <!-- ゲートがここに動的に追加されます -->
+                        <!-- ゲートはここに動的に追加されます -->
                     </div>
                 </div>
             </div>
 
-            <!-- 右パネル：回路キャンバス -->
             <div class="md:w-3/4">
                 <div class="bg-slate-700 p-1 rounded-lg shadow aspect-video">
                     <svg id="circuitCanvas" width="100%" height="100%"></svg>
@@ -73,7 +68,6 @@
             </div>
         </div>
 
-        <!-- フッターエリア -->
         <footer class="text-center mt-4 flex justify-center items-center gap-4">
             <button id="resetButton" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-colors duration-150 text-lg">
                 リセット
@@ -84,11 +78,20 @@
         </footer>
     </div>
 
-    <!-- メッセージモーダル -->
     <div id="messageModal" class="modal">
         <div class="modal-content">
             <p id="modalMessageText"></p>
             <button id="modalCloseButton" class="modal-button">OK</button>
+        </div>
+    </div>
+
+    <div id="explanationModal" class="modal">
+        <div class="modal-content large">
+            <h3 class="text-xl font-bold mb-3 text-sky-300">正解！ 次のステージへ！</h3>
+            <div id="explanationContent" class="text-left text-slate-200 text-sm">
+                <!-- 解説はここに動的に追加されます -->
+            </div>
+            <button id="explanationCloseButton" class="modal-button">OK、次の問題へ</button>
         </div>
     </div>
 
@@ -100,6 +103,7 @@
 
     let currentStageData = {}; // 現在のステージの問題データを保持
     let userCircuit = { gates: [], wires: [] }; // ユーザーが作成した回路
+    let savedRandomStageData = null; // ランダム問題の保存用
 
     // ドラッグ＆ドロップ関連の変数
     let isDragging = false;
@@ -115,6 +119,7 @@
     // DOM要素
     let scoreEl, stageTitleEl, problemDescEl, gateToolboxEl, circuitCanvasEl;
     let checkButtonEl, resetButtonEl, modal, modalMessageText, modalCloseButton;
+    let explanationModal, explanationContent, explanationCloseButton;
 
     // --- 初期化処理 ---
     document.addEventListener('DOMContentLoaded', () => {
@@ -130,12 +135,17 @@
         modalMessageText = document.getElementById('modalMessageText');
         modalCloseButton = document.getElementById('modalCloseButton');
 
+        explanationModal = document.getElementById('explanationModal');
+        explanationContent = document.getElementById('explanationContent');
+        explanationCloseButton = document.getElementById('explanationCloseButton');
+
         svgPoint = circuitCanvasEl.createSVGPoint();
 
         // イベントリスナーの設定
         checkButtonEl.addEventListener('click', checkSolution);
         resetButtonEl.addEventListener('click', () => loadStage(stageLevel));
         modalCloseButton.addEventListener('click', closeModal);
+        explanationCloseButton.addEventListener('click', closeExplanationModal);
         document.addEventListener('mousedown', onMouseDown); // すべてのマウスダウンイベントをここで処理
 
         // ゲーム開始
@@ -147,11 +157,16 @@
         userCircuit = { gates: [], wires: [] };
         circuitCanvasEl.innerHTML = '';
         if (isWiring) cancelWiring();
-        
+
         if (level <= 2) {
             currentStageData = getFixedStage(level);
+            savedRandomStageData = null; // 固定問題のときはリセット
         } else {
-            currentStageData = generateRandomStage(level);
+            // 3問目以降は、既に保存済みならそれを使う
+            if (!savedRandomStageData) {
+                savedRandomStageData = generateRandomStage(level);
+            }
+            currentStageData = savedRandomStageData;
         }
 
         stageTitleEl.textContent = `ステージ ${level}`;
@@ -161,7 +176,7 @@
         drawCanvasNodes();
     }
     
-    // --- 問題生成 (変更なし) ---
+    // --- 問題生成 ---
     function getFixedStage(level) {
         if (level === 1) {
             return {
@@ -180,7 +195,9 @@
                 ]
             };
         }
+        return {}; // 念のため
     }
+    
     function generateRandomStage(level) {
         const gateTypes = ['AND', 'OR', 'NOT', 'XOR'];
         const numGates = Math.min(Math.floor(level / 2) + 1, 4);
@@ -197,42 +214,96 @@
         let availableOutputs = ['A', 'B'];
         let unconnectedGates = [...availableGates];
 
+        // ゲート間の接続をランダムに決定
         while(unconnectedGates.length > 0) {
             const gate = unconnectedGates.shift();
             const numInputs = gate.type === 'NOT' ? 1 : 2;
             for(let i = 0; i < numInputs; i++) {
-                const source = availableOutputs.length > 0 ? availableOutputs.splice(Math.floor(Math.random() * availableOutputs.length), 1)[0] : (Math.random() > 0.5 ? 'A' : 'B');
+                const sourceIndex = Math.floor(Math.random() * availableOutputs.length);
+                const source = availableOutputs.length > 0 ? availableOutputs.splice(sourceIndex, 1)[0] : (Math.random() > 0.5 ? 'A' : 'B');
                 internalWires.push({ from: source, to: `${gate.id}.input${i}`});
                 gatePool[gate.id].inputs.push(source);
             }
             availableOutputs.push(`${gate.id}.output`);
         }
         
+        // 最終的な出力を設定
         const finalOutputId = availableOutputs[availableOutputs.length - 1];
         const outputs = [{id: 'Z'}];
         internalWires.push({ from: finalOutputId, to: 'Z'});
 
+        // 期待される結果をシミュレート
         const expectedResults = [];
         [[false, false], [false, true], [true, false], [true, true]].forEach(pattern => {
             const signal = { A: pattern[0], B: pattern[1] };
-            let changed = true;
-            while(changed) {
-                changed = false;
-                availableGates.forEach(g => {
-                    if (signal[`${g.id}.output`] === undefined) {
-                        const gateInputs = gatePool[g.id].inputs.map(inputName => signal[inputName]);
-                        if(gateInputs.every(v => v !== undefined)) {
-                            signal[`${g.id}.output`] = calculateGateOutput(g.type, gateInputs);
-                            changed = true;
+            
+            let currentSignals = { ...signal };
+            let updatedThisLoop = true;
+            let safetyCounter = 0;
+            const MAX_ITERATIONS = 20;
+
+            while (updatedThisLoop && safetyCounter < MAX_ITERATIONS) {
+                updatedThisLoop = false;
+                internalWires.forEach(wire => {
+                    if (currentSignals[wire.from] !== undefined && currentSignals[wire.to] === undefined) {
+                        const targetGateId = wire.to.split('.')[0];
+                        const inputPinIndex = wire.to.includes('input0') ? 0 : 1;
+
+                        const gate = availableGates.find(g => g.id === targetGateId);
+                        if (gate) {
+                            const gateInputPins = gatePool[gate.id].inputs;
+                            const allInputsReady = gateInputPins.every(inputPinId => currentSignals[inputPinId] !== undefined);
+
+                            if (allInputsReady) {
+                                const gateInputs = gateInputPins.map(inputPinId => currentSignals[inputPinId]);
+                                currentSignals[`${gate.id}.output`] = calculateGateOutput(gate.type, gateInputs);
+                                updatedThisLoop = true;
+                            }
+                        } else if (wire.to === 'Z') {
+                            currentSignals['Z'] = currentSignals[wire.from];
+                            updatedThisLoop = true;
                         }
                     }
                 });
+                safetyCounter++;
             }
-            expectedResults.push({ inputs: { A: pattern[0], B: pattern[1] }, outputs: { Z: signal[finalOutputId] } });
+
+            expectedResults.push({ inputs: { A: pattern[0], B: pattern[1] }, outputs: { Z: currentSignals['Z'] } });
         });
-        return { availableGates, inputs, outputs, expectedResults };
+
+        // ゲートのIDを「gate1」「gate2」のように連番にリマップ
+        const remappedAvailableGates = availableGates.map((gate, index) => ({
+            type: gate.type,
+            id: `gate${index + 1}`
+        }));
+
+        // 期待される結果を計算するための「正解回路」情報を追加
+        const solutionCircuit = {
+            gates: remappedAvailableGates.map((gate, index) => ({
+                id: gate.id,
+                type: gate.type,
+            })),
+            wires: internalWires.map(wire => {
+                let from = wire.from;
+                let to = wire.to;
+
+                remappedAvailableGates.forEach((g, index) => {
+                    const originalId = availableGates[index].id;
+                    if (from.startsWith(originalId)) {
+                        from = from.replace(originalId, g.id);
+                    }
+                    if (to.startsWith(originalId)) {
+                        to = to.replace(originalId, g.id);
+                    }
+                });
+                return { from, to };
+            })
+        };
+
+        return { availableGates: remappedAvailableGates, inputs, outputs, expectedResults, solutionCircuit };
     }
-    
+
+
     // --- 描画関数 ---
     function drawProblemDescription() {
         let html = '<p class="text-slate-300 mb-2">下のゲートをすべて使って、指定の出力を再現しよう。</p>';
@@ -279,14 +350,14 @@
         rect.setAttribute('width', 80);
         rect.setAttribute('height', type === 'NOT' ? 40: 60);
         rect.setAttribute('rx', 5);
-        rect.setAttribute('class', 'fill-slate-500 stroke-slate-400 gate-body'); // ゲート本体を識別するクラスを追加
+        rect.setAttribute('class', 'fill-slate-500 stroke-slate-400 gate-body');
         g.appendChild(rect);
 
         const text = document.createElementNS(SVG_NS, 'text');
         text.setAttribute('x', 40);
         text.setAttribute('y', type === 'NOT' ? 24: 34);
         text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('class', 'fill-sky-300 font-semibold gate-body'); // テキストもゲート本体として扱う
+        text.setAttribute('class', 'fill-sky-300 font-semibold gate-body');
         text.textContent = type;
         g.appendChild(text);
 
@@ -331,7 +402,7 @@
         circuitCanvasEl.appendChild(g);
     }
     
-    // --- マウスイベント処理 (判定ロジックを修正) ---
+    // --- マウスイベント処理 ---
     function getMousePosition(evt) {
         svgPoint.x = evt.clientX;
         svgPoint.y = evt.clientY;
@@ -339,7 +410,6 @@
     }
 
     function onMouseDown(e) {
-        // クリックされた要素に応じて処理を分岐
         if (e.target.classList.contains('wire')) {
             const fromId = e.target.getAttribute('data-from');
             const toId = e.target.getAttribute('data-to');
@@ -347,14 +417,12 @@
             drawUserWires();
             return;
         }
-        // closest() を使って、クリックされた要素がピンまたはその子要素であるかを確認
         const targetPin = e.target.closest('.pin');
         if (targetPin) {
             e.preventDefault();
             handlePinClick(targetPin);
             return;
         }
-        // closest() を使って、クリックされた要素がゲート本体またはその子要素であるかを確認
         const targetGateBody = e.target.closest('.gate-body');
         if (targetGateBody) {
             e.preventDefault();
@@ -362,7 +430,6 @@
             return;
         }
         
-        // 配線中に何もない場所をクリックした場合、配線をキャンセル
         if (isWiring) {
             cancelWiring();
         }
@@ -372,29 +439,22 @@
         if (isWiring) cancelWiring();
         isDragging = true;
 
-        // --- ツールボックスからは「移動」なので消す ---
         if (gateElement.closest('#gate-toolbox')) {
             const type = gateElement.getAttribute('data-type');
-            const id = gateElement.getAttribute('data-id'); // 固定IDを使う
-            // ツールボックスから消す
+            const id = gateElement.getAttribute('data-id');
             gateElement.closest('svg').parentElement.remove();
 
-            // キャンバスのサイズ取得
             const canvasRect = circuitCanvasEl.getBoundingClientRect();
-            // ゲートサイズ
             const gateWidth = 80, gateHeight = (type === 'NOT' ? 40 : 60);
-            // キャンバスの中心座標（SVG座標系に変換）
             const centerX = canvasRect.width / 2 - gateWidth / 2;
             const centerY = canvasRect.height / 2 - gateHeight / 2;
 
-            // 新しいゲートを作成
             const newGateEl = createGateElement(type, id, false);
             circuitCanvasEl.appendChild(newGateEl);
             draggedElement = newGateEl;
 
             userCircuit.gates.push({type, id, x: centerX, y: centerY});
             newGateEl.setAttribute('transform', `translate(${centerX}, ${centerY})`);
-            // ドラッグ開始時のオフセットを中心に
             offset = { x: (getMousePosition(e).x - centerX), y: (getMousePosition(e).y - centerY) };
         } else {
             draggedElement = gateElement;
@@ -413,12 +473,9 @@
         if (!isDragging) return;
         e.preventDefault();
         const pos = getMousePosition(e);
-        // キャンバスのサイズ取得
         const canvasRect = circuitCanvasEl.getBoundingClientRect();
-        // ゲートサイズ
         const type = draggedElement.getAttribute('data-type');
         const gateWidth = 80, gateHeight = (type === 'NOT' ? 40 : 60);
-        // キャンバス内に収める
         let newX = Math.max(0, Math.min(pos.x - offset.x, canvasRect.width - gateWidth));
         let newY = Math.max(0, Math.min(pos.y - offset.y, canvasRect.height - gateHeight));
         draggedElement.setAttribute('transform', `translate(${newX}, ${newY})`);
@@ -498,15 +555,15 @@
              const fromPin = circuitCanvasEl.querySelector(`[data-id="${wire.from}"]`);
              const toPin = circuitCanvasEl.querySelector(`[data-id="${wire.to}"]`);
              if(fromPin && toPin) {
-                const line = document.createElementNS(SVG_NS, 'line');
-                const p1 = getPinPosition(fromPin);
-                const p2 = getPinPosition(toPin);
-                line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
-                line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
-                line.setAttribute('class', 'wire off');
-                line.setAttribute('data-from', wire.from);
-                line.setAttribute('data-to', wire.to);
-                circuitCanvasEl.insertBefore(line, circuitCanvasEl.firstChild);
+                 const line = document.createElementNS(SVG_NS, 'line');
+                 const p1 = getPinPosition(fromPin);
+                 const p2 = getPinPosition(toPin);
+                 line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+                 line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
+                 line.setAttribute('class', 'wire off');
+                 line.setAttribute('data-from', wire.from);
+                 line.setAttribute('data-to', wire.to);
+                 circuitCanvasEl.insertBefore(line, circuitCanvasEl.firstChild);
              }
         });
     }
@@ -522,12 +579,12 @@
     function getPinType(pinId) {
         if (pinId.includes('.output')) return 'output';
         if (pinId.includes('.input')) return 'input';
-        if (currentStageData.inputs.some(i => i.id === pinId)) return 'output';
-        if (currentStageData.outputs.some(o => o.id === pinId)) return 'input';
+        if (currentStageData.inputs.some(i => i.id === pinId)) return 'output'; // 入力ノードは出力ピンとして機能
+        if (currentStageData.outputs.some(o => o.id === pinId)) return 'input'; // 出力ノードは入力ピンとして機能
         return 'unknown';
     }
     
-    // --- シミュレーションと解答チェック (変更なし) ---
+    // --- シミュレーションと解答チェック ---
     function calculateGateOutput(type, inputs) {
         switch (type) {
             case 'NOT': return !inputs[0];
@@ -537,19 +594,56 @@
             default: return false;
         }
     }
-    function simulateUserCircuit(inputValues) {
+
+    function simulateCircuit(circuit, inputValues) {
         const signals = { ...inputValues };
         let changed = true;
         let iterations = 0;
-        while(changed && iterations < 20) {
+        const MAX_ITERATIONS = 20;
+
+        while(changed && iterations < MAX_ITERATIONS) {
             changed = false;
-            userCircuit.gates.forEach(gate => {
+            circuit.gates.forEach(gate => {
                 const outputId = `${gate.id}.output`;
                 if(signals[outputId] === undefined) {
-                    const inputWires = userCircuit.wires.filter(w => w.to.startsWith(gate.id));
-                    const inputSignals = inputWires.map(w => signals[w.from]);
-                    if(inputSignals.length > 0 && inputSignals.every(s => s !== undefined)) {
-                        signals[outputId] = calculateGateOutput(gate.type, inputSignals);
+                    const inputWires = circuit.wires.filter(w => w.to.startsWith(gate.id));
+                    const gateInputs = [];
+                    let allInputsReady = true;
+                    if (gate.type === 'NOT') {
+                        const inputPinId = `${gate.id}.input0`;
+                        const connectedWire = inputWires.find(w => w.to === inputPinId);
+                        if (connectedWire && signals[connectedWire.from] !== undefined) {
+                            gateInputs.push(signals[connectedWire.from]);
+                        } else {
+                            allInputsReady = false;
+                        }
+                    } else { // AND, OR, XOR
+                        const input0PinId = `${gate.id}.input0`;
+                        const input1PinId = `${gate.id}.input1`;
+                        const connectedWire0 = inputWires.find(w => w.to === input0PinId);
+                        const connectedWire1 = inputWires.find(w => w.to === input1PinId);
+                        
+                        if (connectedWire0 && signals[connectedWire0.from] !== undefined &&
+                            connectedWire1 && signals[connectedWire1.from] !== undefined) {
+                            gateInputs.push(signals[connectedWire0.from]);
+                            gateInputs.push(signals[connectedWire1.from]);
+                        } else {
+                            allInputsReady = false;
+                        }
+                    }
+
+                    if(allInputsReady && gateInputs.length > 0) {
+                        signals[outputId] = calculateGateOutput(gate.type, gateInputs);
+                        changed = true;
+                    }
+                }
+            });
+
+            currentStageData.outputs.forEach(outputNode => {
+                if (signals[outputNode.id] === undefined) {
+                    const finalWire = circuit.wires.find(w => w.to === outputNode.id);
+                    if (finalWire && signals[finalWire.from] !== undefined) {
+                        signals[outputNode.id] = signals[finalWire.from];
                         changed = true;
                     }
                 }
@@ -558,6 +652,8 @@
         }
         return signals;
     }
+
+
     function checkSolution() {
         const usedGateCount = userCircuit.gates.length;
         const availableGateCount = currentStageData.availableGates.length;
@@ -568,10 +664,9 @@
 
         let allPatternsPass = true;
         for (const testCase of currentStageData.expectedResults) {
-            const resultSignals = simulateUserCircuit(testCase.inputs);
+            const resultSignals = simulateCircuit(userCircuit, testCase.inputs);
             for (const output of currentStageData.outputs) {
-                const finalWire = userCircuit.wires.find(w => w.to === output.id);
-                const actualOutput = finalWire ? resultSignals[finalWire.from] : undefined;
+                const actualOutput = resultSignals[output.id];
                 if (actualOutput !== testCase.outputs[output.id]) {
                     allPatternsPass = false; break;
                 }
@@ -581,20 +676,100 @@
 
         if (allPatternsPass) {
             score += 10 * stageLevel;
+            const clearedStageLevel = stageLevel;
             stageLevel++;
-            showModal(`正解！+${10 * (stageLevel-1)}点！ 次のステージに進みます。`);
-            loadStage(stageLevel);
+
+            savedRandomStageData = null;
+            showExplanationModal(clearedStageLevel);
         } else {
             showModal('不正解です。回路の接続を見直してください。');
         }
     }
     
+    // --- モーダル表示関数 ---
     function closeModal() { modal.style.display = 'none'; }
     function showModal(message) { modalMessageText.textContent = message; modal.style.display = 'flex'; }
+
+    function showExplanationModal(clearedStageLevel) {
+        let explanationHtml = `<p class="mb-3">ステージ${clearedStageLevel}をクリアしました！ お見事です！</p>`;
+        
+        if (clearedStageLevel === 1) {
+            explanationHtml += `
+                <p>このステージでは **NOTゲート** を使いましたね。</p>
+                <p>NOTゲートは、入力と出力が逆になります。</p>
+                <p>ON (真) が入力されれば OFF (偽) に、OFF (偽) が入力されれば ON (真) になります。</p>
+                <table class="w-full text-center mt-3 border border-slate-600">
+                    <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力 A</th><th class="p-1 border border-slate-600">出力 X</th></tr></thead>
+                    <tbody>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                    </tbody>
+                </table>
+            `;
+        } else if (clearedStageLevel === 2) {
+            explanationHtml += `
+                <p>このステージでは **ANDゲート** を使いました。</p>
+                <p>ANDゲートは、全ての入力がONの時に限り出力がONになります。</p>
+                <table class="w-full text-center mt-3 border border-slate-600">
+                    <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力 A</th><th class="p-1 border border-slate-600">入力 B</th><th class="p-1 border border-slate-600">出力 Y</th></tr></thead>
+                    <tbody>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                    </tbody>
+                </table>
+            `;
+        } else {
+            explanationHtml += `
+                <p>今回の問題は、**論理ゲートの組み合わせ** でした。</p>
+                <p>正解となる回路の各ステップでの信号変化を見てみましょう。</p>
+                <table class="w-full text-center mt-3 border border-slate-600">
+                    <thead>
+                        <tr class="bg-slate-700">
+                            ${currentStageData.inputs.map(i => `<th class="p-1 border border-slate-600">${i.id}</th>`).join('')}
+                            ${currentStageData.solutionCircuit.gates.map(g => `<th class="p-1 border border-slate-600">${g.type}<br/>(${g.id}.output)</th>`).join('')}
+                            ${currentStageData.outputs.map(o => `<th class="p-1 border border-slate-600">${o.id}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            currentStageData.expectedResults.forEach(res => {
+                const fullSignals = simulateCircuit(currentStageData.solutionCircuit, res.inputs);
+                explanationHtml += '<tr>';
+                currentStageData.inputs.forEach(input => {
+                    explanationHtml += `<td class="p-1 border border-slate-600">${fullSignals[input.id] ? 'ON' : 'OFF'}</td>`;
+                });
+                currentStageData.solutionCircuit.gates.forEach(gate => {
+                    const outputId = `${gate.id}.output`;
+                    explanationHtml += `<td class="p-1 border border-slate-600">${fullSignals[outputId] ? 'ON' : 'OFF'}</td>`;
+                });
+                currentStageData.outputs.forEach(output => {
+                    explanationHtml += `<td class="p-1 border border-slate-600 font-bold text-amber-300">${fullSignals[output.id] ? 'ON' : 'OFF'}</td>`;
+                });
+                explanationHtml += '</tr>';
+            });
+
+            explanationHtml += `
+                    </tbody>
+                </table>
+                <p class="mt-3 text-sm text-slate-400">
+                    ※上記の表は正解回路における各ゲートの出力状態を示しています。<br/>
+                    この組み合わせで、与えられた入力を元に最終出力が生成されます。
+                </p>
+            `;
+        }
+
+        explanationContent.innerHTML = explanationHtml;
+        explanationModal.style.display = 'flex';
+    }
+
+    function closeExplanationModal() {
+        explanationModal.style.display = 'none';
+        loadStage(stageLevel); // 次のステージをロード
+    }
 
     </script>
 </body>
 </html>
-apps-fileview.texmex_20250605.00_p3
-htmlのみ.html
-htmlのみ.html を表示しています。
