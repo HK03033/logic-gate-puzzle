@@ -103,11 +103,7 @@
 
     let currentStageData = {}; // 現在のステージの問題データを保持
     let userCircuit = { gates: [], wires: [] }; // ユーザーが作成した回路
-<<<<<<< HEAD
     let savedRandomStageData = null; // ランダム問題の保存用
-=======
-    let savedRandomStageData = null; // ★追加：ランダム問題の保存用
->>>>>>> 42dc526c2b8b3631a0a0ae9d17d5adb0404bce71
 
     // ドラッグ＆ドロップ関連の変数
     let isDragging = false;
@@ -166,11 +162,7 @@
             currentStageData = getFixedStage(level);
             savedRandomStageData = null; // 固定問題のときはリセット
         } else {
-<<<<<<< HEAD
             // 3問目以降は、既に保存済みならそれを使う
-=======
-            // ★3問目以降は、既に保存済みならそれを使う
->>>>>>> 42dc526c2b8b3631a0a0ae9d17d5adb0404bce71
             if (!savedRandomStageData) {
                 savedRandomStageData = generateRandomStage(level);
             }
@@ -686,15 +678,9 @@
             score += 10 * stageLevel;
             const clearedStageLevel = stageLevel;
             stageLevel++;
-<<<<<<< HEAD
 
             savedRandomStageData = null;
             showExplanationModal(clearedStageLevel);
-=======
-            savedRandomStageData = null; // ★次の問題に進むときは新しいランダム問題を生成
-            showModal(`正解！+${10 * (stageLevel-1)}点！ 次のステージに進みます。`);
-            loadStage(stageLevel);
->>>>>>> 42dc526c2b8b3631a0a0ae9d17d5adb0404bce71
         } else {
             showModal('不正解です。回路の接続を見直してください。');
         }
