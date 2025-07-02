@@ -95,6 +95,27 @@
         </div>
     </div>
 
+    <!-- 難易度選択モーダル -->
+    <div id="difficultyModal" class="modal" style="display: flex;">
+      <div class="modal-content large">
+        <h3 class="text-xl font-bold mb-3 text-sky-300">難易度を選択してください</h3>
+        <div class="flex flex-col gap-3">
+          <button class="modal-button" data-diff="tutorial">チュートリアル</button>
+          <button class="modal-button" data-diff="easy">初級</button>
+          <button class="modal-button" data-diff="normal">中級</button>
+          <button class="modal-button" data-diff="hard">上級</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="gateInfoModal" class="modal">
+      <div class="modal-content large">
+        <h3 id="gateInfoTitle" class="text-xl font-bold mb-3 text-sky-300"></h3>
+        <div id="gateInfoBody" class="text-left text-slate-200 text-base"></div>
+        <button id="gateInfoNextButton" class="modal-button mt-4">次へ</button>
+      </div>
+    </div>
+
     <script>
     // --- グローバル変数と定数 ---
     const SVG_NS = "http://www.w3.org/2000/svg";
@@ -121,6 +142,9 @@
     let checkButtonEl, resetButtonEl, modal, modalMessageText, modalCloseButton;
     let explanationModal, explanationContent, explanationCloseButton;
 
+    let difficulty = "tutorial"; // デフォルトはチュートリアル
+    let tutorialStageCount = 5;  // チュートリアルは5問
+
     // --- 初期化処理 ---
     document.addEventListener('DOMContentLoaded', () => {
         // DOM要素の取得
@@ -141,6 +165,9 @@
 
         svgPoint = circuitCanvasEl.createSVGPoint();
 
+        // ゲート説明モーダルのセットアップ
+        setupGateInfoModal();
+
         // イベントリスナーの設定
         checkButtonEl.addEventListener('click', checkSolution);
         resetButtonEl.addEventListener('click', () => loadStage(stageLevel));
@@ -148,8 +175,23 @@
         explanationCloseButton.addEventListener('click', closeExplanationModal);
         document.addEventListener('mousedown', onMouseDown); // すべてのマウスダウンイベントをここで処理
 
-        // ゲーム開始
-        loadStage(stageLevel);
+        // 難易度選択モーダル
+        const difficultyModal = document.getElementById('difficultyModal');
+        difficultyModal.querySelectorAll('.modal-button').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                difficulty = btn.getAttribute('data-diff');
+                stageLevel = 1;
+                score = 0;
+                difficultyModal.style.display = 'none';
+                if (difficulty === "tutorial") {
+                    showGateInfoSequence();
+                } else {
+                    loadStage(stageLevel);
+                }
+            });
+        });
+
+        // ゲーム開始（初回は難易度選択モーダルが開いているので何もしない）
     });
     
     // --- ステージ管理 ---
@@ -158,11 +200,13 @@
         circuitCanvasEl.innerHTML = '';
         if (isWiring) cancelWiring();
 
-        if (level <= 2) {
+        if (difficulty === "tutorial") {
+            currentStageData = getTutorialStage(level);
+            savedRandomStageData = null;
+        } else if (level <= 2) {
             currentStageData = getFixedStage(level);
-            savedRandomStageData = null; // 固定問題のときはリセット
+            savedRandomStageData = null;
         } else {
-            // 3問目以降は、既に保存済みならそれを使う
             if (!savedRandomStageData) {
                 savedRandomStageData = generateRandomStage(level);
             }
@@ -681,6 +725,14 @@
 
             savedRandomStageData = null;
             showExplanationModal(clearedStageLevel);
+
+            // チュートリアル終了時
+            if (difficulty === "tutorial" && stageLevel > tutorialStageCount) {
+                setTimeout(() => {
+                    showModal("チュートリアルクリア！お疲れさまでした。他の難易度にも挑戦してみましょう！");
+                    difficultyModal.style.display = 'flex';
+                }, 500);
+            }
         } else {
             showModal('不正解です。回路の接続を見直してください。');
         }
@@ -717,6 +769,34 @@
                         <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
                         <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
                         <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                    </tbody>
+                </table>
+            `;
+        } else if (clearedStageLevel === 3) {
+            explanationHtml += `
+                <p>このステージでは **ORゲート** を使いました。</p>
+                <p>ORゲートは、いずれかの入力がONの時に出力がONになります。</p>
+                <table class="w-full text-center mt-3 border border-slate-600">
+                    <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力 A</th><th class="p-1 border border-slate-600">入力 B</th><th class="p-1 border border-slate-600">出力 Z</th></tr></thead>
+                    <tbody>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                    </tbody>
+                </table>
+            `;
+        } else if (clearedStageLevel === 4) {
+            explanationHtml += `
+                <p>このステージでは **XORゲート** を使いました。</p>
+                <p>XORゲートは、入力のいずれか一方がONの時に出力がONになります。</p>
+                <table class="w-full text-center mt-3 border border-slate-600">
+                    <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力 A</th><th class="p-1 border border-slate-600">入力 B</th><th class="p-1 border border-slate-600">出力 Z</th></tr></thead>
+                    <tbody>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
                     </tbody>
                 </table>
             `;
@@ -770,6 +850,189 @@
         loadStage(stageLevel); // 次のステージをロード
     }
 
+    function getTutorialStage(level) {
+        // 1,2問目は既存のgetFixedStageを流用
+        if (level === 1) return getFixedStage(1);
+        if (level === 2) return getFixedStage(2);
+        // 3問目: ORゲート
+        if (level === 3) {
+            return {
+                availableGates: [{ type: 'OR', id: 'fixed_or1' }],
+                inputs: [{ id: 'A' }, { id: 'B' }], outputs: [{ id: 'Z' }],
+                expectedResults: [
+                    { inputs: { A: false, B: false }, outputs: { Z: false } },
+                    { inputs: { A: true, B: false }, outputs: { Z: true } },
+                    { inputs: { A: false, B: true }, outputs: { Z: true } },
+                    { inputs: { A: true, B: true }, outputs: { Z: true } }
+                ],
+                solutionCircuit: {
+                    gates: [{ id: 'fixed_or1', type: 'OR' }],
+                    wires: [
+                        { from: 'A', to: 'fixed_or1.input0' },
+                        { from: 'B', to: 'fixed_or1.input1' },
+                        { from: 'fixed_or1.output', to: 'Z' }
+                    ]
+                }
+            };
+        }
+        // 4問目: XORゲート
+        if (level === 4) {
+            return {
+                availableGates: [{ type: 'XOR', id: 'fixed_xor1' }],
+                inputs: [{ id: 'A' }, { id: 'B' }], outputs: [{ id: 'Z' }],
+                expectedResults: [
+                    { inputs: { A: false, B: false }, outputs: { Z: false } },
+                    { inputs: { A: true, B: false }, outputs: { Z: true } },
+                    { inputs: { A: false, B: true }, outputs: { Z: true } },
+                    { inputs: { A: true, B: true }, outputs: { Z: false } }
+                ],
+                solutionCircuit: {
+                    gates: [{ id: 'fixed_xor1', type: 'XOR' }],
+                    wires: [
+                        { from: 'A', to: 'fixed_xor1.input0' },
+                        { from: 'B', to: 'fixed_xor1.input1' },
+                        { from: 'fixed_xor1.output', to: 'Z' }
+                    ]
+                }
+            };
+        }
+        // 5問目: AND+NOT（NAND相当）
+        if (level === 5) {
+            return {
+                availableGates: [
+                    { type: 'AND', id: 'fixed_and2' },
+                    { type: 'NOT', id: 'fixed_not2' }
+                ],
+                inputs: [{ id: 'A' }, { id: 'B' }], outputs: [{ id: 'Z' }],
+                expectedResults: [
+                    { inputs: { A: false, B: false }, outputs: { Z: true } },
+                    { inputs: { A: true, B: false }, outputs: { Z: true } },
+                    { inputs: { A: false, B: true }, outputs: { Z: true } },
+                    { inputs: { A: true, B: true }, outputs: { Z: false } }
+                ],
+                solutionCircuit: {
+                    gates: [
+                        { id: 'fixed_and2', type: 'AND' },
+                        { id: 'fixed_not2', type: 'NOT' }
+                    ],
+                    wires: [
+                        { from: 'A', to: 'fixed_and2.input0' },
+                        { from: 'B', to: 'fixed_and2.input1' },
+                        { from: 'fixed_and2.output', to: 'fixed_not2.input0' },
+                        { from: 'fixed_not2.output', to: 'Z' }
+                    ]
+                }
+            };
+        }
+        // 6問目以降は終了
+        return {
+            availableGates: [],
+            inputs: [],
+            outputs: [],
+            expectedResults: []
+        };
+    }
+
+    // --- ゲート説明データ ---
+const gateTutorials = [
+    {
+        title: "NOTゲート（否定）",
+        body: `
+            <p>NOTゲートは入力の値を反転します。</p>
+            <ul class="list-disc ml-5 my-2">
+                <li>入力がON（真）のとき、出力はOFF（偽）</li>
+                <li>入力がOFF（偽）のとき、出力はON（真）</li>
+            </ul>
+            <table class="w-full text-center mt-2 border border-slate-600">
+                <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力</th><th class="p-1 border border-slate-600">出力</th></tr></thead>
+                <tbody>
+                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
+                </tbody>
+            </table>
+        `
+    },
+    {
+        title: "ANDゲート（論理積）",
+        body: `
+            <p>ANDゲートはすべての入力がON（真）のときだけ出力がONになります。</p>
+            <table class="w-full text-center mt-2 border border-slate-600">
+                <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力A</th><th class="p-1 border border-slate-600">入力B</th><th class="p-1 border border-slate-600">出力</th></tr></thead>
+                <tbody>
+                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                </tbody>
+            </table>
+        `
+    },
+    {
+        title: "ORゲート（論理和）",
+        body: `
+            <p>ORゲートはどちらか一方でも入力がON（真）なら出力がONになります。</p>
+            <table class="w-full text-center mt-2 border border-slate-600">
+                <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力A</th><th class="p-1 border border-slate-600">入力B</th><th class="p-1 border border-slate-600">出力</th></tr></thead>
+                <tbody>
+                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
+                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                </tbody>
+            </table>
+        `
+    },
+    {
+        title: "XORゲート（排他的論理和）",
+        body: `
+            <p>XORゲートは入力が異なるときだけ出力がON（真）になります。</p>
+            <table class="w-full text-center mt-2 border border-slate-600">
+                <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力A</th><th class="p-1 border border-slate-600">入力B</th><th class="p-1 border border-slate-600">出力</th></tr></thead>
+                <tbody>
+                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
+                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                </tbody>
+            </table>
+        `
+    }
+];
+
+let gateInfoModal, gateInfoTitle, gateInfoBody, gateInfoNextButton;
+let gateInfoIndex = 0;
+
+function showGateInfoSequence() {
+    gateInfoIndex = 0;
+    showGateInfoModal(gateInfoIndex);
+}
+
+function showGateInfoModal(index) {
+    gateInfoTitle.innerHTML = gateTutorials[index].title;
+    gateInfoBody.innerHTML = gateTutorials[index].body;
+    gateInfoModal.style.display = 'flex';
+    gateInfoNextButton.textContent = (index === gateTutorials.length - 1) ? "チュートリアル開始" : "次へ";
+}
+
+function closeGateInfoModal() {
+    gateInfoModal.style.display = 'none';
+}
+
+function setupGateInfoModal() {
+    gateInfoModal = document.getElementById('gateInfoModal');
+    gateInfoTitle = document.getElementById('gateInfoTitle');
+    gateInfoBody = document.getElementById('gateInfoBody');
+    gateInfoNextButton = document.getElementById('gateInfoNextButton');
+    gateInfoNextButton.addEventListener('click', () => {
+        gateInfoIndex++;
+        if (gateInfoIndex < gateTutorials.length) {
+            showGateInfoModal(gateInfoIndex);
+        } else {
+            closeGateInfoModal();
+            loadStage(1); // チュートリアル1問目開始
+        }
+    });
+}
     </script>
 </body>
 </html>
