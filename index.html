@@ -45,6 +45,10 @@
             <div class="mt-2 md:mt-0 text-xl md:text-2xl font-semibold text-amber-400">
                 スコア: <span id="score">0</span>
             </div>
+            <!-- 難易度選択ボタン -->
+            <button id="difficultySelectButton" class="ml-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
+                難易度選択
+            </button>
         </header>
 
         <div class="flex flex-col md:flex-row gap-4">
@@ -168,30 +172,35 @@
         // ゲート説明モーダルのセットアップ
         setupGateInfoModal();
 
+        // 難易度選択ボタンのイベント
+        const difficultySelectButton = document.getElementById('difficultySelectButton');
+        const difficultyModal = document.getElementById('difficultyModal');
+        difficultySelectButton.addEventListener('click', () => {
+            difficultyModal.style.display = 'flex';
+        });
+
         // イベントリスナーの設定
         checkButtonEl.addEventListener('click', checkSolution);
         resetButtonEl.addEventListener('click', () => loadStage(stageLevel));
         modalCloseButton.addEventListener('click', closeModal);
         explanationCloseButton.addEventListener('click', closeExplanationModal);
-        document.addEventListener('mousedown', onMouseDown); // すべてのマウスダウンイベントをここで処理
+        document.addEventListener('mousedown', onMouseDown);
 
         // 難易度選択モーダル
-        const difficultyModal = document.getElementById('difficultyModal');
         difficultyModal.querySelectorAll('.modal-button').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 difficulty = btn.getAttribute('data-diff');
                 stageLevel = 1;
                 score = 0;
+                savedRandomStageData = null; // ← ここで必ずリセット
                 difficultyModal.style.display = 'none';
                 if (difficulty === "tutorial") {
-                    showGateInfoSequence();
+                    showGateInfoSequence(); // チュートリアル説明→開始
                 } else {
-                    loadStage(stageLevel);
+                    loadStage(stageLevel); // 他の難易度はすぐ開始
                 }
             });
         });
-
-        // ゲーム開始（初回は難易度選択モーダルが開いているので何もしない）
     });
     
     // --- ステージ管理 ---
@@ -203,14 +212,32 @@
         if (difficulty === "tutorial") {
             currentStageData = getTutorialStage(level);
             savedRandomStageData = null;
-        } else if (level <= 2) {
-            currentStageData = getFixedStage(level);
-            savedRandomStageData = null;
-        } else {
+        } else if (difficulty === "easy") {
+            // 初級は固定問題
+            if (level <= 2) {
+                currentStageData = getFixedStage(level);
+                savedRandomStageData = null;
+            } else {
+                if (!savedRandomStageData) {
+                    savedRandomStageData = generateRandomStage(level, "easy");
+                }
+                currentStageData = savedRandomStageData;
+            }
+        } else if (difficulty === "normal") {
+            // 中級は2～4ゲートの自動生成
             if (!savedRandomStageData) {
-                savedRandomStageData = generateRandomStage(level);
+                savedRandomStageData = generateRandomStage(level, "normal");
             }
             currentStageData = savedRandomStageData;
+        } else if (difficulty === "hard") {
+            // 上級は3～4ゲートの自動生成
+            if (!savedRandomStageData) {
+                savedRandomStageData = generateRandomStage(level, "hard");
+            }
+            currentStageData = savedRandomStageData;
+        } else {
+            // 念のため
+            currentStageData = {};
         }
 
         stageTitleEl.textContent = `ステージ ${level}`;
@@ -242,9 +269,17 @@
         return {}; // 念のため
     }
     
-    function generateRandomStage(level) {
+    function generateRandomStage(level, diff) {
         const gateTypes = ['AND', 'OR', 'NOT', 'XOR'];
-        const numGates = Math.min(Math.floor(level / 2) + 1, 4);
+        let numGates;
+        if (diff === "normal") {
+            numGates = Math.max(2, Math.min(Math.floor(level / 2) + 1, 4));
+        } else if (diff === "hard") {
+            numGates = Math.max(3, Math.min(Math.floor(level / 2) + 2, 4));
+        } else {
+            // easyやその他は従来通り
+            numGates = Math.min(Math.floor(level / 2) + 1, 4);
+        }
         let availableGates = [], internalWires = [], gatePool = {};
 
         for (let i = 0; i < numGates; i++) {
