@@ -192,12 +192,17 @@
                 difficulty = btn.getAttribute('data-diff');
                 stageLevel = 1;
                 score = 0;
-                savedRandomStageData = null; // ← ここで必ずリセット
+                savedRandomStageData = null;
                 difficultyModal.style.display = 'none';
                 if (difficulty === "tutorial") {
-                    showGateInfoSequence(); // チュートリアル説明→開始
+                    // ここで1問目の説明だけを表示
+                    showGateInfoModal(0);
+                    gateInfoNextButton.onclick = () => {
+                        closeGateInfoModal();
+                        actuallyLoadStage(1);
+                    };
                 } else {
-                    loadStage(stageLevel); // 他の難易度はすぐ開始
+                    loadStage(stageLevel);
                 }
             });
         });
@@ -209,6 +214,23 @@
         circuitCanvasEl.innerHTML = '';
         if (isWiring) cancelWiring();
 
+        // チュートリアル時は各問題の前に説明モーダルを表示
+        if (difficulty === "tutorial") {
+            // ステージごとに説明を出す（1:NOT, 2:AND, 3:OR, 4:XOR, 5:NAND）
+            if (level >= 1 && level <= 4) {
+                showGateInfoModal(level - 1);
+                gateInfoNextButton.onclick = () => {
+                    closeGateInfoModal();
+                    actuallyLoadStage(level);
+                };
+                return;
+            }
+        }
+        actuallyLoadStage(level);
+    }
+
+    // 本来のloadStage処理を分離
+    function actuallyLoadStage(level) {
         if (difficulty === "tutorial") {
             currentStageData = getTutorialStage(level);
             savedRandomStageData = null;
@@ -764,8 +786,15 @@
             // チュートリアル終了時
             if (difficulty === "tutorial" && stageLevel > tutorialStageCount) {
                 setTimeout(() => {
+                    // まず難易度選択モーダルを隠す
+                    difficultyModal.style.display = 'none';
+                    // 先に「お疲れさまでした」モーダルを表示
                     showModal("チュートリアルクリア！お疲れさまでした。他の難易度にも挑戦してみましょう！");
-                    difficultyModal.style.display = 'flex';
+                    // OKボタン押下時に難易度選択モーダルを再表示
+                    modalCloseButton.onclick = () => {
+                        closeModal();
+                        difficultyModal.style.display = 'flex';
+                    };
                 }, 500);
             }
         } else {
@@ -1058,16 +1087,8 @@ function setupGateInfoModal() {
     gateInfoTitle = document.getElementById('gateInfoTitle');
     gateInfoBody = document.getElementById('gateInfoBody');
     gateInfoNextButton = document.getElementById('gateInfoNextButton');
-    gateInfoNextButton.addEventListener('click', () => {
-        gateInfoIndex++;
-        if (gateInfoIndex < gateTutorials.length) {
-            showGateInfoModal(gateInfoIndex);
-        } else {
-            closeGateInfoModal();
-            loadStage(1); // チュートリアル1問目開始
-        }
-    });
-}
+    // ここでイベントリスナーは設定しない（loadStageや難易度選択時に都度設定する）
+    }
     </script>
 </body>
 </html>
