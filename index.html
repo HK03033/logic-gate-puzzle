@@ -44,8 +44,8 @@
             </div>
             <div class="mt-2 md:mt-0 text-xl md:text-2xl font-semibold text-amber-400">
                 スコア: <span id="score">0</span>
+                <span class="ml-4">時間: <span id="timer">00:00</span></span>
             </div>
-            <!-- 難易度選択ボタン -->
             <button id="difficultySelectButton" class="ml-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
                 難易度選択
             </button>
@@ -60,8 +60,7 @@
                 <div id="gate-toolbox" class="gate-toolbox p-4 rounded-lg shadow flex-grow">
                     <h3 class="text-lg font-semibold mb-3 text-sky-300">ゲートツールボックス</h3>
                     <div id="gate-toolbox-items" class="grid grid-cols-2 gap-2">
-                        <!-- ゲートはここに動的に追加されます -->
-                    </div>
+                        </div>
                 </div>
             </div>
 
@@ -93,13 +92,11 @@
         <div class="modal-content large">
             <h3 class="text-xl font-bold mb-3 text-sky-300">正解！ 次のステージへ！</h3>
             <div id="explanationContent" class="text-left text-slate-200 text-sm">
-                <!-- 解説はここに動的に追加されます -->
-            </div>
+                </div>
             <button id="explanationCloseButton" class="modal-button">OK、次の問題へ</button>
         </div>
     </div>
 
-    <!-- 難易度選択モーダル -->
     <div id="difficultyModal" class="modal" style="display: flex;">
       <div class="modal-content large">
         <h3 class="text-xl font-bold mb-3 text-sky-300">難易度を選択してください</h3>
@@ -141,6 +138,11 @@
     let wiringStartPin = null;
     let wiringPreviewLine = null;
     
+    // タイマー関連の変数
+    let timerInterval;
+    let startTime;
+    let timerEl; // タイマー表示要素
+
     // DOM要素
     let scoreEl, stageTitleEl, problemDescEl, gateToolboxEl, circuitCanvasEl;
     let checkButtonEl, resetButtonEl, modal, modalMessageText, modalCloseButton;
@@ -162,6 +164,7 @@
         modal = document.getElementById('messageModal');
         modalMessageText = document.getElementById('modalMessageText');
         modalCloseButton = document.getElementById('modalCloseButton');
+        timerEl = document.getElementById('timer'); // タイマー要素を取得
 
         explanationModal = document.getElementById('explanationModal');
         explanationContent = document.getElementById('explanationContent');
@@ -208,11 +211,34 @@
         });
     });
     
+    // --- タイマー関連関数 ---
+    function startTimer() {
+        clearInterval(timerInterval); // 既存のタイマーをクリア
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimerDisplay, 1000);
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+    }
+
+    function updateTimerDisplay() {
+        const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsedTime / 60);
+        const seconds = elapsedTime % 60;
+        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function getElapsedTimeInSeconds() {
+        return Math.floor((Date.now() - startTime) / 1000);
+    }
+
     // --- ステージ管理 ---
     function loadStage(level) {
         userCircuit = { gates: [], wires: [] };
         circuitCanvasEl.innerHTML = '';
         if (isWiring) cancelWiring();
+        stopTimer(); // ステージロード時にタイマーを停止・リセット
 
         // チュートリアル時は各問題の前に説明モーダルを表示
         if (difficulty === "tutorial") {
@@ -267,6 +293,7 @@
         drawProblemDescription();
         drawToolbox();
         drawCanvasNodes();
+        startTimer(); // ステージが描画されたらタイマーを開始
     }
     
     // --- 問題生成 ---
@@ -776,12 +803,17 @@
         }
 
         if (allPatternsPass) {
-            score += 10 * stageLevel;
+            stopTimer(); // 正解したらタイマーを停止
+            const elapsedTime = getElapsedTimeInSeconds();
+            const timeBonus = Math.max(1, 100 - Math.floor(elapsedTime / 2)); // 経過時間に応じてボーナスを減点、最低1点
+            const stageScore = (10 * stageLevel) + timeBonus;
+            score += stageScore;
+
             const clearedStageLevel = stageLevel;
             stageLevel++;
 
             savedRandomStageData = null;
-            showExplanationModal(clearedStageLevel);
+            showExplanationModal(clearedStageLevel, stageScore, elapsedTime, timeBonus); // 時間情報を渡す
 
             // チュートリアル終了時
             if (difficulty === "tutorial" && stageLevel > tutorialStageCount) {
@@ -806,8 +838,10 @@
     function closeModal() { modal.style.display = 'none'; }
     function showModal(message) { modalMessageText.textContent = message; modal.style.display = 'flex'; }
 
-    function showExplanationModal(clearedStageLevel) {
+    function showExplanationModal(clearedStageLevel, stageScore, elapsedTime, timeBonus) {
         let explanationHtml = `<p class="mb-3">ステージ${clearedStageLevel}をクリアしました！ お見事です！</p>`;
+        explanationHtml += `<p class="mb-3">獲得スコア: ${stageScore} (時間ボーナス: ${timeBonus})</p>`;
+        explanationHtml += `<p class="mb-3">クリアタイム: ${String(Math.floor(elapsedTime / 60)).padStart(2, '0')}:${String(elapsedTime % 60).padStart(2, '0')}</p>`;
         
         if (clearedStageLevel === 1) {
             explanationHtml += `
