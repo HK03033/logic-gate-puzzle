@@ -46,9 +46,14 @@
                 スコア: <span id="score">0</span>
             </div>
             <!-- 難易度選択ボタン -->
-            <button id="difficultySelectButton" class="ml-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
-                難易度選択
-            </button>
+            <div class="flex gap-2 items-center justify-center mt-2 md:mt-0">
+                <button id="difficultySelectButton" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
+                    難易度選択
+                </button>
+                <button id="gateInfoButton" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
+                    ゲート説明
+                </button>
+            </div>
         </header>
 
         <div class="flex flex-col md:flex-row gap-4">
@@ -178,6 +183,10 @@
         difficultySelectButton.addEventListener('click', () => {
             difficultyModal.style.display = 'flex';
         });
+
+        // ゲート説明ボタンのイベント
+        const gateInfoButton = document.getElementById('gateInfoButton');
+        gateInfoButton.addEventListener('click', () => showGateInfoSequence(true));
 
         // イベントリスナーの設定
         checkButtonEl.addEventListener('click', checkSolution);
@@ -1036,9 +1045,11 @@ const gateTutorials = [
 
 let gateInfoModal, gateInfoTitle, gateInfoBody, gateInfoNextButton;
 let gateInfoIndex = 0;
+let isGateInfoOnly = false; // ← 追加
 
-function showGateInfoSequence() {
+function showGateInfoSequence(gateInfoOnly = false) {
     gateInfoIndex = 0;
+    isGateInfoOnly = gateInfoOnly; // ← 追加
     showGateInfoModal(gateInfoIndex);
 }
 
@@ -1046,7 +1057,11 @@ function showGateInfoModal(index) {
     gateInfoTitle.innerHTML = gateTutorials[index].title;
     gateInfoBody.innerHTML = gateTutorials[index].body;
     gateInfoModal.style.display = 'flex';
-    gateInfoNextButton.textContent = (index === gateTutorials.length - 1) ? "チュートリアル開始" : "次へ";
+    if (index === gateTutorials.length - 1) {
+        gateInfoNextButton.textContent = isGateInfoOnly ? "問題へ戻る" : "チュートリアル開始";
+    } else {
+        gateInfoNextButton.textContent = "次へ";
+    }
 }
 
 function closeGateInfoModal() {
@@ -1064,7 +1079,10 @@ function setupGateInfoModal() {
             showGateInfoModal(gateInfoIndex);
         } else {
             closeGateInfoModal();
-            loadStage(1); // チュートリアル1問目開始
+            if (!isGateInfoOnly) {
+                loadStage(1); // チュートリアル1問目開始
+            }
+            // isGateInfoOnly時は何もしない（モーダルを閉じるだけ）
         }
     });
 }
