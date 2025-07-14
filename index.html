@@ -44,7 +44,9 @@
             </div>
             <div class="mt-2 md:mt-0 text-xl md:text-2xl font-semibold text-amber-400">
                 スコア: <span id="score">0</span>
+                <span class="ml-4">時間: <span id="timer">00:00</span></span>
             </div>
+<<<<<<< HEAD
             <!-- 難易度選択ボタン -->
             <div class="flex gap-2 items-center justify-center mt-2 md:mt-0">
                 <button id="difficultySelectButton" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
@@ -54,6 +56,11 @@
                     ゲート説明
                 </button>
             </div>
+=======
+            <button id="difficultySelectButton" class="ml-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
+                難易度選択
+            </button>
+>>>>>>> 53c8ef434a26c82db00736c586bd577420204cbb
         </header>
 
         <div class="flex flex-col md:flex-row gap-4">
@@ -65,8 +72,7 @@
                 <div id="gate-toolbox" class="gate-toolbox p-4 rounded-lg shadow flex-grow">
                     <h3 class="text-lg font-semibold mb-3 text-sky-300">ゲートツールボックス</h3>
                     <div id="gate-toolbox-items" class="grid grid-cols-2 gap-2">
-                        <!-- ゲートはここに動的に追加されます -->
-                    </div>
+                        </div>
                 </div>
             </div>
 
@@ -98,13 +104,11 @@
         <div class="modal-content large">
             <h3 class="text-xl font-bold mb-3 text-sky-300">正解！ 次のステージへ！</h3>
             <div id="explanationContent" class="text-left text-slate-200 text-sm">
-                <!-- 解説はここに動的に追加されます -->
-            </div>
+                </div>
             <button id="explanationCloseButton" class="modal-button">OK、次の問題へ</button>
         </div>
     </div>
 
-    <!-- 難易度選択モーダル -->
     <div id="difficultyModal" class="modal" style="display: flex;">
       <div class="modal-content large">
         <h3 class="text-xl font-bold mb-3 text-sky-300">難易度を選択してください</h3>
@@ -146,6 +150,11 @@
     let wiringStartPin = null;
     let wiringPreviewLine = null;
     
+    // タイマー関連の変数
+    let timerInterval;
+    let startTime;
+    let timerEl; // タイマー表示要素
+
     // DOM要素
     let scoreEl, stageTitleEl, problemDescEl, gateToolboxEl, circuitCanvasEl;
     let checkButtonEl, resetButtonEl, modal, modalMessageText, modalCloseButton;
@@ -167,6 +176,7 @@
         modal = document.getElementById('messageModal');
         modalMessageText = document.getElementById('modalMessageText');
         modalCloseButton = document.getElementById('modalCloseButton');
+        timerEl = document.getElementById('timer'); // タイマー要素を取得
 
         explanationModal = document.getElementById('explanationModal');
         explanationContent = document.getElementById('explanationContent');
@@ -201,23 +211,68 @@
                 difficulty = btn.getAttribute('data-diff');
                 stageLevel = 1;
                 score = 0;
-                savedRandomStageData = null; // ← ここで必ずリセット
+                savedRandomStageData = null;
                 difficultyModal.style.display = 'none';
                 if (difficulty === "tutorial") {
-                    showGateInfoSequence(); // チュートリアル説明→開始
+                    // ここで1問目の説明だけを表示
+                    showGateInfoModal(0);
+                    gateInfoNextButton.onclick = () => {
+                        closeGateInfoModal();
+                        actuallyLoadStage(1);
+                    };
                 } else {
-                    loadStage(stageLevel); // 他の難易度はすぐ開始
+                    loadStage(stageLevel);
                 }
             });
         });
     });
     
+    // --- タイマー関連関数 ---
+    function startTimer() {
+        clearInterval(timerInterval); // 既存のタイマーをクリア
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimerDisplay, 1000);
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+    }
+
+    function updateTimerDisplay() {
+        const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsedTime / 60);
+        const seconds = elapsedTime % 60;
+        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function getElapsedTimeInSeconds() {
+        return Math.floor((Date.now() - startTime) / 1000);
+    }
+
     // --- ステージ管理 ---
     function loadStage(level) {
         userCircuit = { gates: [], wires: [] };
         circuitCanvasEl.innerHTML = '';
         if (isWiring) cancelWiring();
+        stopTimer(); // ステージロード時にタイマーを停止・リセット
 
+        // チュートリアル時は各問題の前に説明モーダルを表示
+        if (difficulty === "tutorial") {
+            // ステージごとに説明を出す（1:NOT, 2:AND, 3:OR, 4:XOR, 5:NAND）
+            if (level >= 1 && level <= 4) {
+                showGateInfoModal(level - 1);
+                gateInfoNextButton.onclick = () => {
+                    closeGateInfoModal();
+                    actuallyLoadStage(level);
+                };
+                return;
+            }
+        }
+        actuallyLoadStage(level);
+    }
+
+    // 本来のloadStage処理を分離
+    function actuallyLoadStage(level) {
         if (difficulty === "tutorial") {
             currentStageData = getTutorialStage(level);
             savedRandomStageData = null;
@@ -254,6 +309,7 @@
         drawProblemDescription();
         drawToolbox();
         drawCanvasNodes();
+        startTimer(); // ステージが描画されたらタイマーを開始
     }
     
     // --- 問題生成 ---
@@ -763,18 +819,30 @@
         }
 
         if (allPatternsPass) {
-            score += 10 * stageLevel;
+            stopTimer(); // 正解したらタイマーを停止
+            const elapsedTime = getElapsedTimeInSeconds();
+            const timeBonus = Math.max(1, 100 - Math.floor(elapsedTime / 2)); // 経過時間に応じてボーナスを減点、最低1点
+            const stageScore = (10 * stageLevel) + timeBonus;
+            score += stageScore;
+
             const clearedStageLevel = stageLevel;
             stageLevel++;
 
             savedRandomStageData = null;
-            showExplanationModal(clearedStageLevel);
+            showExplanationModal(clearedStageLevel, stageScore, elapsedTime, timeBonus); // 時間情報を渡す
 
             // チュートリアル終了時
             if (difficulty === "tutorial" && stageLevel > tutorialStageCount) {
                 setTimeout(() => {
+                    // まず難易度選択モーダルを隠す
+                    difficultyModal.style.display = 'none';
+                    // 先に「お疲れさまでした」モーダルを表示
                     showModal("チュートリアルクリア！お疲れさまでした。他の難易度にも挑戦してみましょう！");
-                    difficultyModal.style.display = 'flex';
+                    // OKボタン押下時に難易度選択モーダルを再表示
+                    modalCloseButton.onclick = () => {
+                        closeModal();
+                        difficultyModal.style.display = 'flex';
+                    };
                 }, 500);
             }
         } else {
@@ -786,8 +854,10 @@
     function closeModal() { modal.style.display = 'none'; }
     function showModal(message) { modalMessageText.textContent = message; modal.style.display = 'flex'; }
 
-    function showExplanationModal(clearedStageLevel) {
+    function showExplanationModal(clearedStageLevel, stageScore, elapsedTime, timeBonus) {
         let explanationHtml = `<p class="mb-3">ステージ${clearedStageLevel}をクリアしました！ お見事です！</p>`;
+        explanationHtml += `<p class="mb-3">獲得スコア: ${stageScore} (時間ボーナス: ${timeBonus})</p>`;
+        explanationHtml += `<p class="mb-3">クリアタイム: ${String(Math.floor(elapsedTime / 60)).padStart(2, '0')}:${String(elapsedTime % 60).padStart(2, '0')}</p>`;
         
         if (clearedStageLevel === 1) {
             explanationHtml += `
@@ -1073,6 +1143,7 @@ function setupGateInfoModal() {
     gateInfoTitle = document.getElementById('gateInfoTitle');
     gateInfoBody = document.getElementById('gateInfoBody');
     gateInfoNextButton = document.getElementById('gateInfoNextButton');
+<<<<<<< HEAD
     gateInfoNextButton.addEventListener('click', () => {
         gateInfoIndex++;
         if (gateInfoIndex < gateTutorials.length) {
@@ -1086,6 +1157,10 @@ function setupGateInfoModal() {
         }
     });
 }
+=======
+    // ここでイベントリスナーは設定しない（loadStageや難易度選択時に都度設定する）
+    }
+>>>>>>> 53c8ef434a26c82db00736c586bd577420204cbb
     </script>
 </body>
 </html>
