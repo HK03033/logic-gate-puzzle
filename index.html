@@ -3,33 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>論理ゲートパズル - 無限ステージ版</title>
+    <title>論理ゲートパズル</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* カスタムフォント (Inter) */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            overscroll-behavior: none;
-            user-select: none;
-        }
-        #circuitCanvas { background-color: #334155; } /* bg-slate-700 */
-        .gate-toolbox { background-color: #475569; } /* bg-slate-600 */
-        .gate-body { cursor: grab; } /* ゲート本体のカーソル */
+        body { font-family: 'Inter', sans-serif; overscroll-behavior: none; user-select: none; }
+        #circuitCanvas { background-color: #334155; }
+        .gate-toolbox { background-color: #475569; }
+        .gate-body { cursor: grab; }
         .gate.dragging .gate-body { cursor: grabbing; }
         .gate.dragging { opacity: 0.7; }
         .pin { cursor: crosshair; }
-        .wire { cursor: pointer; stroke-width: 5px; } /* クリックしやすく太くする */
-        .wire.on { stroke: #4ade80; } /* green-400 */
-        .wire.off { stroke: #9ca3af; } /* gray-400 */
-        .led.on { fill: #facc15; } /* yellow-400 */
-        .led.off { fill: #6b7280; } /* gray-500 */
+        .wire { cursor: pointer; stroke-width: 5px; }
+        .wire.on { stroke: #4ade80; }
+        .wire.off { stroke: #9ca3af; }
+        .led.on { fill: #facc15; }
+        .led.off { fill: #6b7280; }
         #wiring-preview { stroke: #38bdf8; stroke-dasharray: 5,5; pointer-events: none; stroke-width: 3px; }
-
-        /* メッセージモーダルのスタイル */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
         .modal-content { background-color: #1f2937; color: #f1f5f9; margin: auto; padding: 20px; border: 1px solid #334155; width: 80%; max-width: 400px; border-radius: 8px; text-align: center; }
-        .modal-content.large { max-width: 600px; } /* 解説用にもう少し広く */
+        .modal-content.large { max-width: 600px; }
         .modal-button { background-color: #0ea5e9; color: white; padding: 10px 20px; margin-top: 15px; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.15s; }
         .modal-button:hover { background-color: #0284c7; }
     </style>
@@ -40,93 +33,141 @@
         <header class="mb-4 text-center md:flex md:justify-between md:items-center">
             <div>
                 <h1 class="text-2xl md:text-3xl font-bold text-sky-400">論理ゲートパズル</h1>
-                <p id="stage-title" class="text-lg md:text-xl mt-1 text-slate-300">ステージ 1</p>
+                <p id="stage-title" class="text-lg md:text-xl mt-1 text-slate-300">モードを選択してください</p>
             </div>
-            <div class="mt-2 md:mt-0 text-xl md:text-2xl font-semibold text-amber-400">
-                スコア: <span id="score">0</span>
-                <span class="ml-4">時間: <span id="timer">00:00</span></span>
+            <div id="game-info" class="text-xl md:text-2xl font-semibold text-amber-400 flex flex-col items-center" style="position: relative; min-width: 180px;">
+                <div id="score-display" style="line-height: 1; text-align: center; width: 100%;">スコア: <span id="score">0</span></div>
+                <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                    <div id="infinite-timer-display" style="display: none; margin-top: 0.2em; margin-bottom: 0.2em; text-align: center; width: 100%;" class="text-base md:text-lg text-emerald-400">
+                        <span style="vertical-align: middle;">経過時間: <span id="infinite-timer">00:00</span></span>
+                    </div>
+                    <div id="time-attack-display" style="display: none; margin-top: 0.2em; margin-bottom: 0.2em; text-align: center; width: 100%;" class="text-base md:text-lg text-emerald-400">
+                        <span style="vertical-align: middle;">残り時間: <span id="timer">0:00</span></span>
+                        <span id="question-counter-wrapper" class="ml-4">問題: <span id="question-counter">0/10</span></span>
+                    </div>
+                </div>
             </div>
-<<<<<<< HEAD
-            <!-- 難易度選択ボタン -->
             <div class="flex gap-2 items-center justify-center mt-2 md:mt-0">
-                <button id="difficultySelectButton" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
-                    難易度選択
+                <button id="modeSelectButton" class="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
+                    モード選択
                 </button>
-                <button id="gateInfoButton" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
-                    ゲート説明
+                <button id="infoButton" class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
+                    ヘルプ
                 </button>
             </div>
-=======
-            <button id="difficultySelectButton" class="ml-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors duration-150">
-                難易度選択
-            </button>
->>>>>>> 53c8ef434a26c82db00736c586bd577420204cbb
         </header>
 
         <div class="flex flex-col md:flex-row gap-4">
             <div class="md:w-1/4 flex flex-col gap-4">
                 <div class="bg-slate-700 p-4 rounded-lg shadow">
-                    <h3 class="text-lg font-semibold mb-2 text-sky-300">課題</h3>
+                    <h3 class="text-lg font-semibold mb-2 text-sky-300">問題</h3>
                     <div id="problem-description"></div>
                 </div>
                 <div id="gate-toolbox" class="gate-toolbox p-4 rounded-lg shadow flex-grow">
-                    <h3 class="text-lg font-semibold mb-3 text-sky-300">ゲートツールボックス</h3>
-                    <div id="gate-toolbox-items" class="grid grid-cols-2 gap-2">
-                        </div>
+                    <h3 class="text-lg font-semibold mb-3 text-sky-300">ゲートボックス</h3>
+                    <div id="gate-toolbox-items" class="grid grid-cols-2 gap-2"></div>
                 </div>
             </div>
-
-            <div class="md:w-3/4">
-                <div class="bg-slate-700 p-1 rounded-lg shadow aspect-video">
+            <div class="md:w-3/4 flex flex-col h-full">
+                <div class="bg-slate-700 p-1 rounded-lg shadow aspect-video flex-1 w-full">
                     <svg id="circuitCanvas" width="100%" height="100%"></svg>
                 </div>
+                <div style="height: 28px;"></div>
+                <div class="flex flex-row gap-4 mt-2" style="margin-left: 150px;">
+                    <button id="resetButton" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-colors duration-150 text-lg">
+                        リセット
+                    </button>
+                    <button id="checkButton" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-colors duration-150 text-lg">
+                        回路チェック！
+                    </button>
+                    <button id="infiniteEndButton"
+                            style="display:none; margin-left: 32px;"
+                            class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded-full shadow-lg text-lg">
+                        終了
+                    </button>
+                </div>
             </div>
         </div>
-
-        <footer class="text-center mt-4 flex justify-center items-center gap-4">
-            <button id="resetButton" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-colors duration-150 text-lg">
-                リセット
-            </button>
-            <button id="checkButton" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-colors duration-150 text-lg">
-                回路チェック！
-            </button>
-        </footer>
     </div>
 
-    <div id="messageModal" class="modal">
-        <div class="modal-content">
-            <p id="modalMessageText"></p>
-            <button id="modalCloseButton" class="modal-button">OK</button>
-        </div>
+    <div id="messageModal" class="modal"><div class="modal-content"><p id="modalMessageText"></p><button id="modalCloseButton" class="modal-button">OK</button></div></div>
+    <div id="explanationModal" class="modal"><div class="modal-content large"><h3 id="explanationTitle" class="text-xl font-bold mb-3 text-sky-300">正解！</h3><div id="explanationContent" class="text-left text-slate-200 text-sm"></div><button id="explanationCloseButton" class="modal-button">次へ</button></div></div>
+    <div id="modeSelectModal" class="modal" style="display: flex;">
+  <div class="modal-content large">
+    <h3 class="text-xl font-bold mb-3 text-sky-300">モードを選択してください</h3>
+    <div class="flex flex-col gap-3">
+      <button class="modal-button" data-mode="infinite">無限モード</button>
+      <button class="modal-button" data-mode="timeAttack">タイムアタックモード (5分 / 10問)</button>
+      <button class="modal-button" data-mode="tutorial">チュートリアル</button>
+      <button id="viewHighScoreButton" class="modal-button bg-amber-500 hover:bg-amber-600">スコア表示</button>
     </div>
-
-    <div id="explanationModal" class="modal">
-        <div class="modal-content large">
-            <h3 class="text-xl font-bold mb-3 text-sky-300">正解！ 次のステージへ！</h3>
-            <div id="explanationContent" class="text-left text-slate-200 text-sm">
-                </div>
-            <button id="explanationCloseButton" class="modal-button">OK、次の問題へ</button>
-        </div>
+    <div class="flex justify-center mt-6">
+      <button id="modeSelectCloseButton" class="modal-button" style="background-color: #64748b; min-width: 120px;">閉じる</button>
     </div>
-
-    <div id="difficultyModal" class="modal" style="display: flex;">
+  </div>
+</div>
+    <div id="difficultyModal" class="modal">
       <div class="modal-content large">
         <h3 class="text-xl font-bold mb-3 text-sky-300">難易度を選択してください</h3>
         <div class="flex flex-col gap-3">
-          <button class="modal-button" data-diff="tutorial">チュートリアル</button>
           <button class="modal-button" data-diff="easy">初級</button>
           <button class="modal-button" data-diff="normal">中級</button>
           <button class="modal-button" data-diff="hard">上級</button>
         </div>
       </div>
     </div>
-
-    <div id="gateInfoModal" class="modal">
+    <div id="resultModal" class="modal">
       <div class="modal-content large">
-        <h3 id="gateInfoTitle" class="text-xl font-bold mb-3 text-sky-300"></h3>
-        <div id="gateInfoBody" class="text-left text-slate-200 text-base"></div>
-        <button id="gateInfoNextButton" class="modal-button mt-4">次へ</button>
+        <h3 id="resultTitle" class="text-2xl font-bold mb-3 text-amber-400">ゲームクリア！</h3>
+        <div id="resultBody" class="text-lg text-slate-200"></div>
+        <button id="resultCloseButton" class="modal-button">モード選択</button>
       </div>
+    </div>
+    <div id="gateInfoModal" class="modal">
+      <div class="modal-content large flex flex-col items-center" style="min-height: 340px; position: relative;">
+        <div class="flex-1 flex flex-col items-center w-full">
+          <h3 id="gateInfoTitle" class="text-xl font-bold mb-3 text-sky-300"></h3>
+          <div id="gateInfoBody" class="text-left text-slate-200 text-base"></div>
+        </div>
+        <div class="flex flex-row items-center justify-center gap-2 mt-2">
+          <button id="gateInfoPrevButton" class="modal-button" style="width: 32px; height: 48px; min-width: 0; background: rgba(30,41,59,0.7); color: #38bdf8; font-size: 1.5rem; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid #334155; z-index: 2; padding: 0;">&lt;</button>
+          <button id="gateInfoCloseButton" class="modal-button" style="height: 40px; min-width: 80px;">閉じる</button>
+          <button id="gateInfoNextTabButton" class="modal-button" style="width: 32px; height: 48px; min-width: 0; background: rgba(30,41,59,0.7); color: #38bdf8; font-size: 1.5rem; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid #334155; z-index: 2; padding: 0;">&gt;</button>
+        </div>
+      </div>
+    </div>
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <h3 class="text-xl font-bold mb-4 text-sky-300">ヘルプ</h3>
+            <div class="flex flex-col gap-3">
+                <button id="infoModalGateButton" class="modal-button">ゲート説明</button>
+                <button id="infoModalOperationButton" class="modal-button">操作説明</button>
+            </div>
+            <button id="infoModalCloseButton" class="modal-button" style="background-color: #64748b;">閉じる</button>
+        </div>
+    </div>
+    <div id="highScoreModal" class="modal">
+    <div class="modal-content large">
+        <h3 class="text-xl font-bold mb-3 text-amber-400">ハイスコア</h3>
+        <div id="highScoreContent" class="text-left text-slate-200 text-base"></div>
+        <button id="highScoreCloseButton" class="modal-button">閉じる</button>
+    </div>
+</div>
+    <div id="operationInfoModal" class="modal">
+        <div class="modal-content large">
+            <h3 class="text-xl font-bold mb-3 text-sky-300">操作説明</h3>
+            <div class="text-left text-slate-200 text-sm">
+                <ul class="list-disc pl-5 space-y-2">
+                    <li><b>ゲートの配置:</b> ツールボックスのゲートをクリックして、回路エリアに配置します。</li>
+                    <li><b>配線:</b> ゲートや入力の丸い部分（ピン）をクリックし、接続したい先のピンをクリックすると配線できます。</li>
+                    <li><b>配線の削除:</b> 作成したワイヤー（線）をクリックすると削除できます。</li>
+                    <li><b>ゲートの移動:</b> 回路エリアに配置したゲートは、ドラッグして好きな場所に移動できます。</li>
+                    <li><b>リセット:</b> 「リセット」ボタンを押すと、配置したゲートや配線が全て初期状態に戻ります。</li>
+                    <li><b>回路チェック:</b> 回路が完成したら「回路チェック！」ボタンを押して、正解かどうかを確認します。</li>
+                </ul>
+            </div>
+            <button id="operationInfoCloseButton" class="modal-button">閉じる</button>
+        </div>
     </div>
 
     <script>
@@ -135,37 +176,66 @@
     let score = 0;
     let stageLevel = 1;
 
-    let currentStageData = {}; // 現在のステージの問題データを保持
-    let userCircuit = { gates: [], wires: [] }; // ユーザーが作成した回路
-    let savedRandomStageData = null; // ランダム問題の保存用
+    let currentStageData = {};
+    let userCircuit = { gates: [], wires: [] };
+    let savedRandomStageData = null;
 
-    // ドラッグ＆ドロップ関連の変数
-    let isDragging = false;
-    let draggedElement = null;
-    let offset = { x: 0, y: 0 };
-    let svgPoint; // SVG座標変換用
-
-    // 配線関連の変数
-    let isWiring = false;
-    let wiringStartPin = null;
-    let wiringPreviewLine = null;
+    let isDragging = false, draggedElement = null, offset = { x: 0, y: 0 }, svgPoint;
+    let isWiring = false, wiringStartPin = null, wiringPreviewLine = null;
     
-    // タイマー関連の変数
-    let timerInterval;
-    let startTime;
-    let timerEl; // タイマー表示要素
-
-    // DOM要素
     let scoreEl, stageTitleEl, problemDescEl, gateToolboxEl, circuitCanvasEl;
-    let checkButtonEl, resetButtonEl, modal, modalMessageText, modalCloseButton;
-    let explanationModal, explanationContent, explanationCloseButton;
+    let checkButtonEl, resetButtonEl;
+    let modal, modalMessageText, modalCloseButton;
+    let explanationModal, explanationContent, explanationCloseButton, explanationTitle;
 
-    let difficulty = "tutorial"; // デフォルトはチュートリアル
-    let tutorialStageCount = 5;  // チュートリアルは5問
+    let gameMode = null;
+    let difficulty = "easy";
+    // ▼▼▼ 変更点 ▼▼▼ チュートリアルの総ステージ数を7に変更
+    let tutorialStageCount = 7;
+
+    // タイムアタックモード / 無限モード共通タイマー関連
+    const TIME_ATTACK_TIME_LIMIT = 300; // 5分
+    const INFINITE_MODE_TIME_LIMIT = 60; // 1問60秒 <--- [変更点] 無限モード用の制限時間を追加
+    const TOTAL_QUESTIONS = 10;
+    let timeLeft = 0;
+    let timerId = null;
+    let currentQuestionNumber = 1;
+    let timeAttackDisplay, timerEl, questionCounterWrapper;
+    let infiniteTimerEl; // グローバルで宣言
+
+    // --- 無限モード用ストップウォッチタイマー・スコア ---
+    let infiniteTimerInterval = null;
+    let infiniteStartTime = null;
+    let problemStartTime = null;
+    let lastProblemTime = 0;
+    let lastProblemScore = 0;
+
+    // タイマー表示の初期化
+    function startInfiniteTimer() {
+        stopInfiniteTimer();
+        infiniteStartTime = Date.now();
+        document.getElementById('infinite-timer-display').style.display = 'block';
+        infiniteTimerInterval = setInterval(updateInfiniteTimerDisplay, 1000);
+        updateInfiniteTimerDisplay();
+    }
+
+    function stopInfiniteTimer() {
+        clearInterval(infiniteTimerInterval);
+        infiniteTimerInterval = null;
+        document.getElementById('infinite-timer-display').style.display = 'none';
+    }
+
+    function updateInfiniteTimerDisplay() {
+        if (!infiniteStartTime || !infiniteTimerEl) return;
+        const elapsed = Math.floor((Date.now() - infiniteStartTime) / 1000);
+        const min = Math.floor(elapsed / 60);
+        const sec = elapsed % 60;
+        infiniteTimerEl.textContent = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    }
 
     // --- 初期化処理 ---
     document.addEventListener('DOMContentLoaded', () => {
-        // DOM要素の取得
+        const operationInfoModal = document.getElementById('operationInfoModal');
         scoreEl = document.getElementById('score');
         stageTitleEl = document.getElementById('stage-title');
         problemDescEl = document.getElementById('problem-description');
@@ -176,143 +246,487 @@
         modal = document.getElementById('messageModal');
         modalMessageText = document.getElementById('modalMessageText');
         modalCloseButton = document.getElementById('modalCloseButton');
-        timerEl = document.getElementById('timer'); // タイマー要素を取得
-
         explanationModal = document.getElementById('explanationModal');
+        explanationTitle = document.getElementById('explanationTitle'); // <--- [追加] 解説モーダルのタイトル取得
         explanationContent = document.getElementById('explanationContent');
         explanationCloseButton = document.getElementById('explanationCloseButton');
+        timeAttackDisplay = document.getElementById('time-attack-display');
+        timerEl = document.getElementById('timer');
+        questionCounterWrapper = document.getElementById('question-counter-wrapper');
+        infiniteTimerEl = document.getElementById('infinite-timer');
+        if (!infiniteTimerEl) {
+            alert('infinite-timer要素が見つかりません。HTMLに <span id="infinite-timer">00:00</span> を追加してください。');
+        }
 
         svgPoint = circuitCanvasEl.createSVGPoint();
 
-        // ゲート説明モーダルのセットアップ
         setupGateInfoModal();
 
-        // 難易度選択ボタンのイベント
-        const difficultySelectButton = document.getElementById('difficultySelectButton');
+        // --- チュートリアル開始時のモーダル選択 ---
+        const modeSelectModal = document.getElementById('modeSelectModal');
+        const modeSelectCloseButton = document.getElementById('modeSelectCloseButton');
         const difficultyModal = document.getElementById('difficultyModal');
-        difficultySelectButton.addEventListener('click', () => {
-            difficultyModal.style.display = 'flex';
+        let tutorialStartPending = false;
+
+        // アプリ起動時は閉じるボタンを非表示
+        modeSelectCloseButton.style.display = 'none';
+
+        // モード選択ボタンを押したときだけ閉じるボタンを表示
+        document.getElementById('modeSelectButton').addEventListener('click', () => {
+            modeSelectModal.style.display = 'flex';
+            modeSelectCloseButton.style.display = 'block';
         });
 
-        // ゲート説明ボタンのイベント
-        const gateInfoButton = document.getElementById('gateInfoButton');
-        gateInfoButton.addEventListener('click', () => showGateInfoSequence(true));
-
-        // イベントリスナーの設定
-        checkButtonEl.addEventListener('click', checkSolution);
-        resetButtonEl.addEventListener('click', () => loadStage(stageLevel));
-        modalCloseButton.addEventListener('click', closeModal);
-        explanationCloseButton.addEventListener('click', closeExplanationModal);
-        document.addEventListener('mousedown', onMouseDown);
-
-        // 難易度選択モーダル
-        difficultyModal.querySelectorAll('.modal-button').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                difficulty = btn.getAttribute('data-diff');
-                stageLevel = 1;
-                score = 0;
-                savedRandomStageData = null;
-                difficultyModal.style.display = 'none';
-                if (difficulty === "tutorial") {
-                    // ここで1問目の説明だけを表示
-                    showGateInfoModal(0);
-                    gateInfoNextButton.onclick = () => {
-                        closeGateInfoModal();
-                        actuallyLoadStage(1);
-                    };
+        // モード選択モーダルのボタンを押したときは閉じるボタンを再び非表示に
+        modeSelectModal.querySelectorAll('.modal-button[data-mode]').forEach(btn => {
+            btn.addEventListener('click', e => {
+                modeSelectCloseButton.style.display = 'none';
+                gameMode = btn.getAttribute('data-mode');
+                modeSelectModal.style.display = 'none';
+                if (gameMode === 'tutorial') {
+                    difficulty = 'tutorial';
+                    tutorialStartPending = true;
+                    operationInfoModal.style.display = 'flex'; // まず操作説明を表示
                 } else {
-                    loadStage(stageLevel);
+                    document.getElementById('difficultyModal').style.display = 'flex';
                 }
             });
         });
+
+        // 閉じるボタンでモード選択・難易度選択ウィンドウを両方閉じる
+        modeSelectCloseButton.addEventListener('click', () => {
+            modeSelectModal.style.display = 'none';
+            if (difficultyModal) difficultyModal.style.display = 'none';
+        });
+
+        // 操作説明モーダルの閉じるボタンでゲート説明を表示
+        document.getElementById('operationInfoCloseButton').addEventListener('click', () => {
+            operationInfoModal.style.display = 'none';
+            if (tutorialStartPending) {
+                tutorialStartPending = false;
+                showGateInfoSequence();
+            }
+        });
+        
+        difficultyModal.querySelectorAll('.modal-button').forEach(btn => {
+            btn.addEventListener('click', e => {
+                difficulty = btn.getAttribute('data-diff');
+                difficultyModal.style.display = 'none';
+                startGame();
+            });
+        });
+        
+        document.getElementById('resultCloseButton').addEventListener('click', () => {
+             document.getElementById('resultModal').style.display = 'none';
+             modeSelectModal.style.display = 'flex';
+        });
+
+        checkButtonEl.addEventListener('click', checkSolution);
+        resetButtonEl.addEventListener('click', () => loadCurrentStage());
+        modalCloseButton.addEventListener('click', closeModal);
+        explanationCloseButton.addEventListener('click', closeExplanationModal);
+        
+        // --- ヘルプモーダルのイベントリスナー ---
+        const infoButton = document.getElementById('infoButton');
+        const infoModal = document.getElementById('infoModal');
+        const infoModalCloseButton = document.getElementById('infoModalCloseButton');
+        const infoModalGateButton = document.getElementById('infoModalGateButton');
+        const infoModalOperationButton = document.getElementById('infoModalOperationButton');
+        
+        const operationInfoCloseButton = document.getElementById('operationInfoCloseButton');
+
+        // ヘルプボタン
+        infoButton.addEventListener('click', () => {
+            infoModal.style.display = 'flex';
+        });
+
+        // ヘルプモーダルの閉じる
+        infoModalCloseButton.addEventListener('click', () => {
+            infoModal.style.display = 'none';
+        });
+
+        // ヘルプ→ゲート説明
+        infoModalGateButton.addEventListener('click', () => {
+            infoModal.style.display = 'none';
+            showGateInfoSequence(true);
+        });
+
+        // ヘルプ→操作説明
+        infoModalOperationButton.addEventListener('click', () => {
+            infoModal.style.display = 'none';
+            operationInfoModal.style.display = 'flex';
+        });
+
+        // 操作説明モーダルの閉じる
+        operationInfoCloseButton.addEventListener('click', () => {
+            operationInfoModal.style.display = 'none';
+        });
+
+        document.addEventListener('mousedown', onMouseDown);
     });
+
+    // --- ゲーム開始時 ---
+    function startGame() {
+        score = 0;
+        savedRandomStageData = null;
+        updateUIForNewGame();
+
+        if (gameMode === 'infinite') {
+            stageLevel = 1;
+            startInfiniteTimer();
+            loadStage(stageLevel);
+        } else if (gameMode === 'timeAttack') {
+            currentQuestionNumber = 1;
+            timeLeft = TIME_ATTACK_TIME_LIMIT;
+            startTimer();
+            loadStage(currentQuestionNumber);
+        } else {
+            stopInfiniteTimer();
+        }
+    }
     
-    // --- タイマー関連関数 ---
-    function startTimer() {
-        clearInterval(timerInterval); // 既存のタイマーをクリア
-        startTime = Date.now();
-        timerInterval = setInterval(updateTimerDisplay, 1000);
+    // --- UI初期化 ---
+    function updateUIForNewGame() {
+        scoreEl.textContent = score;
+        if (gameMode === 'timeAttack') {
+            if (timeAttackDisplay) timeAttackDisplay.style.display = 'block';
+            if (questionCounterWrapper) questionCounterWrapper.style.display = 'inline';
+            updateTimerDisplay();
+            document.getElementById('question-counter').textContent = `${currentQuestionNumber}/${TOTAL_QUESTIONS}`;
+        } else if (gameMode === 'infinite') {
+            if (timeAttackDisplay) timeAttackDisplay.style.display = 'none';
+            document.getElementById('infinite-timer-display').style.display = 'block';
+        } else {
+            if (timeAttackDisplay) timeAttackDisplay.style.display = 'none';
+            document.getElementById('infinite-timer-display').style.display = 'none';
+        }
     }
 
+    // --- タイマー管理 ---
+    function startTimer() {
+        if (timerId) clearInterval(timerId);
+        updateTimerDisplay(); // 開始時に一度表示を更新
+        timerId = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay();
+            if (timeLeft <= 0) {
+                // [変更点] 時間切れの処理をゲームモードで分岐
+                if (gameMode === 'timeAttack') {
+                    gameOver("時間切れ！");
+                } else if (gameMode === 'infinite') {
+                    timeLeft = 0; // 負の値にならないように
+                    stopTimer();
+                    timerEl.textContent = "時間切れ"; // 表示を更新
+                }
+            }
+        }, 1000);
+    }
+    
     function stopTimer() {
-        clearInterval(timerInterval);
+        clearInterval(timerId);
+        timerId = null;
     }
 
     function updateTimerDisplay() {
-        const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-        const minutes = Math.floor(elapsedTime / 60);
-        const seconds = elapsedTime % 60;
-        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
 
-    function getElapsedTimeInSeconds() {
-        return Math.floor((Date.now() - startTime) / 1000);
+    // --- ゲーム終了処理 ---
+    function gameOver(message) {
+        stopTimer();
+        let isHighScore = false;
+        let rank = null;
+        if (gameMode === "infinite") {
+            isHighScore = addHighScore("infinite", score);
+            rank = getHighScoreRank("infinite", score);
+        } else if (gameMode === "timeAttack") {
+            isHighScore = addHighScore("timeAttack", score);
+            rank = getHighScoreRank("timeAttack", score);
+        }
+        document.getElementById('resultTitle').textContent = message;
+        let resultHtml = `<p>最終スコア: <span class="font-bold text-xl">${score}</span></p>`;
+        if (gameMode !== "tutorial") {
+            if (isHighScore && rank !== null && rank <= 10) {
+                resultHtml += `<p class="mt-2 text-emerald-400 font-bold">おめでとうございます！<br>ハイスコア${rank}位にランクインしました！</p>`;
+            } else {
+                // 現在のハイスコアと比較
+                const scores = getHighScores();
+                const modeScores = scores[gameMode] || [];
+                const best = modeScores.length > 0 ? modeScores[0].score : 0;
+                resultHtml += `<p class="mt-2 text-sky-300">現在のハイスコア: <b>${best}</b> ／ 今回のスコア: <b>${score}</b></p>`;
+            }
+        }
+        document.getElementById('resultBody').innerHTML = resultHtml;
+        document.getElementById('resultModal').style.display = 'flex';
     }
 
+    function gameClear() {
+        stopTimer();
+        const bonusScore = timeLeft * 10;
+        const finalScore = score + bonusScore;
+        let isHighScore = addHighScore("timeAttack", finalScore);
+        let rank = getHighScoreRank("timeAttack", finalScore);
+
+        document.getElementById('resultTitle').textContent = "ゲームクリア！";
+        let resultHtml = `
+            <p>クリアタイム: <span class="font-bold">${formatTime(TIME_ATTACK_TIME_LIMIT - timeLeft)}</span></p>
+            <p>基本スコア: <span class="font-bold">${score}</span></p>
+            <p>タイムボーナス: <span class="font-bold">${bonusScore}</span></p>
+            <hr class="my-2 border-slate-600">
+            <p>最終スコア: <span class="font-bold text-2xl text-amber-300">${finalScore}</span></p>
+        `;
+        if (isHighScore && rank !== null && rank <= 10) {
+            resultHtml += `<p class="mt-2 text-emerald-400 font-bold">おめでとうございます！<br>ハイスコア${rank}位にランクインしました！</p>`;
+        } else {
+            // 現在のハイスコアと比較
+            const scores = getHighScores();
+            const modeScores = scores["timeAttack"] || [];
+            const best = modeScores.length > 0 ? modeScores[0].score : 0;
+            resultHtml += `<p class="mt-2 text-sky-300">現在のハイスコア: <b>${best}</b> ／ 今回のスコア: <b>${finalScore}</b></p>`;
+        }
+        document.getElementById('resultBody').innerHTML = resultHtml;
+        document.getElementById('resultModal').style.display = 'flex';
+    }
+
+    function formatTime(seconds) {
+        const min = Math.floor(seconds / 60);
+        const sec = seconds % 60;
+        return `${min}分${sec}秒`;
+    }
+    
     // --- ステージ管理 ---
+    function loadCurrentStage() {
+        if(gameMode === 'tutorial') loadStage(stageLevel);
+        else if (gameMode === 'infinite') loadStage(stageLevel);
+        else if (gameMode === 'timeAttack') loadStage(currentQuestionNumber);
+    }
+
     function loadStage(level) {
         userCircuit = { gates: [], wires: [] };
         circuitCanvasEl.innerHTML = '';
         if (isWiring) cancelWiring();
-        stopTimer(); // ステージロード時にタイマーを停止・リセット
 
-        // チュートリアル時は各問題の前に説明モーダルを表示
-        if (difficulty === "tutorial") {
-            // ステージごとに説明を出す（1:NOT, 2:AND, 3:OR, 4:XOR, 5:NAND）
-            if (level >= 1 && level <= 4) {
-                showGateInfoModal(level - 1);
-                gateInfoNextButton.onclick = () => {
-                    closeGateInfoModal();
-                    actuallyLoadStage(level);
-                };
-                return;
-            }
-        }
-        actuallyLoadStage(level);
-    }
+        // 無限モード以外はタイマー非表示
+        if (gameMode !== 'infinite') stopInfiniteTimer();
 
-    // 本来のloadStage処理を分離
-    function actuallyLoadStage(level) {
         if (difficulty === "tutorial") {
             currentStageData = getTutorialStage(level);
             savedRandomStageData = null;
-        } else if (difficulty === "easy") {
-            // 初級は固定問題
-            if (level <= 2) {
-                currentStageData = getFixedStage(level);
-                savedRandomStageData = null;
-            } else {
-                if (!savedRandomStageData) {
-                    savedRandomStageData = generateRandomStage(level, "easy");
-                }
-                currentStageData = savedRandomStageData;
-            }
-        } else if (difficulty === "normal") {
-            // 中級は2～4ゲートの自動生成
-            if (!savedRandomStageData) {
-                savedRandomStageData = generateRandomStage(level, "normal");
-            }
-            currentStageData = savedRandomStageData;
-        } else if (difficulty === "hard") {
-            // 上級は3～4ゲートの自動生成
-            if (!savedRandomStageData) {
-                savedRandomStageData = generateRandomStage(level, "hard");
-            }
-            currentStageData = savedRandomStageData;
         } else {
-            // 念のため
-            currentStageData = {};
+             if (!savedRandomStageData) {
+                 savedRandomStageData = generateRandomStage(level, difficulty);
+             }
+             currentStageData = savedRandomStageData;
         }
 
-        stageTitleEl.textContent = `ステージ ${level}`;
+        if (gameMode === 'infinite') {
+            stageTitleEl.textContent = `ステージ ${level}`;
+            problemStartTime = Date.now(); // 問題ごとのストップウォッチ開始
+        } else if (gameMode === 'tutorial') {
+             stageTitleEl.textContent = `チュートリアル ${level}`;
+        }
+
         scoreEl.textContent = score;
         drawProblemDescription();
         drawToolbox();
         drawCanvasNodes();
-        startTimer(); // ステージが描画されたらタイマーを開始
     }
     
-    // --- 問題生成 ---
+    // --- 解答チェック ---
+    function checkSolution() {
+        const usedGateCount = userCircuit.gates.length;
+        const availableGateCount = currentStageData.availableGates.length;
+        if (usedGateCount !== availableGateCount) {
+            showModal(`ツールボックスのゲートを全て使ってください。現在 ${usedGateCount} / ${availableGateCount} 個使用しています。`);
+            return;
+        }
+
+        let allPatternsPass = true;
+        for (const testCase of currentStageData.expectedResults) {
+            const resultSignals = simulateCircuit(userCircuit, testCase.inputs);
+            for (const output of currentStageData.outputs) {
+                if (resultSignals[output.id] !== testCase.outputs[output.id]) {
+                    allPatternsPass = false; break;
+                }
+            }
+            if (!allPatternsPass) break;
+        }
+
+        if (allPatternsPass) {
+            savedRandomStageData = null;
+
+            if (gameMode === 'infinite') {
+                // 問題ごとの経過時間（秒）
+                lastProblemTime = Math.floor((Date.now() - problemStartTime) / 1000);
+                // スコア計算: 100点から1秒ごとに0.5点減点、最低10点、小数点以下切り捨て
+                let baseScore = 100;
+                let penalty = lastProblemTime * 0.5;
+                lastProblemScore = Math.max(10, Math.floor(baseScore - penalty));
+                score += lastProblemScore;
+                showExplanationModal(stageLevel, `ステージ ${stageLevel} クリア！`, lastProblemTime, lastProblemScore);
+                stageLevel++;
+            } else if (gameMode === 'timeAttack') {
+                // タイムアタックモードの処理を追加
+                score += 100 + (currentQuestionNumber * 10);
+                showExplanationModal(currentQuestionNumber, `問題 ${currentQuestionNumber} クリア！`);
+                currentQuestionNumber++;
+                if (currentQuestionNumber > TOTAL_QUESTIONS) {
+                    gameClear();
+                } else {
+                    loadStage(currentQuestionNumber);
+                }
+            } else if (gameMode === 'tutorial') {
+                score += 10;
+                showExplanationModal(stageLevel, `チュートリアル ${stageLevel} クリア！`);
+                stageLevel++;
+                if (stageLevel > tutorialStageCount) {
+                   setTimeout(() => {
+                        gameOver("チュートリアルクリア！");
+                   }, 500);
+                }
+             }
+        } else {
+            showModal('不正解です。回路の接続を見直してください。');
+        }
+    }
+    
+    // --- 解説モーダル ---
+    // 無限モード時はかかった時間・獲得スコアのみ表示
+    function showExplanationModal(clearedStageLevel, title, problemTimeSec, problemScore) {
+        let explanationHtml = '';
+        if (gameMode === 'infinite' && problemTimeSec !== undefined && problemScore !== undefined) {
+            explanationHtml += `
+                <div class="mb-2 text-emerald-400">
+                    この問題にかかった時間: <b>${Math.floor(problemTimeSec / 60)}分${problemTimeSec % 60}秒</b>
+                </div>
+                <div class="mb-2 text-amber-300">
+                    獲得スコア: <b>${problemScore}</b>
+                </div>
+            `;
+        }
+        explanationHtml += `<p class="mb-3">${title} お見事です！</p>`;
+
+        // --- ここからは既存の解説内容 ---
+        if (clearedStageLevel === 1) {
+            explanationHtml += `
+                <p>このステージでは <b>NOTゲート</b> を使いました。</p>
+                <p>NOTゲートは、入力と出力が逆になります。</p>
+                <p>ON (真) が入力されれば OFF (偽) に、OFF (偽) が入力されれば ON (真) になります。</p>
+                <table class="w-full text-center mt-3 border border-slate-600">
+                    <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力 A</th><th class="p-1 border border-slate-600">出力 X</th></tr></thead>
+                    <tbody>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                    </tbody>
+                </table>
+            `;
+        } else if (clearedStageLevel === 2) {
+            explanationHtml += `
+                <p>このステージでは <b>ANDゲート</b> を使いました。</p>
+                <p>ANDゲートは、全ての入力がONの時に限り出力がONになります。</p>
+                <table class="w-full text-center mt-3 border border-slate-600">
+                    <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力 A</th><th class="p-1 border border-slate-600">入力 B</th><th class="p-1 border border-slate-600">出力 Y</th></tr></thead>
+                    <tbody>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                    </tbody>
+                </table>
+            `;
+        } else if (clearedStageLevel === 3) {
+            explanationHtml += `
+                <p>このステージでは <b>ORゲート</b> を使いました。</p>
+                <p>ORゲートは、いずれかの入力がONの時に出力がONになります。</p>
+                <table class="w-full text-center mt-3 border border-slate-600">
+                    <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力 A</th><th class="p-1 border border-slate-600">入力 B</th><th class="p-1 border border-slate-600">出力 Z</th></tr></thead>
+                    <tbody>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                    </tbody>
+                </table>
+            `;
+        } else if (clearedStageLevel === 4) {
+            explanationHtml += `
+                <p>このステージでは <b>XORゲート</b> を使いました。</p>
+                <p>XORゲートは、入力のいずれか一方がONの時に出力がONになります。</p>
+                <table class="w-full text-center mt-3 border border-slate-600">
+                    <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力 A</th><th class="p-1 border border-slate-600">入力 B</th><th class="p-1 border border-slate-600">出力 Z</th></tr></thead>
+                    <tbody>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
+                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                    </tbody>
+                </table>
+            `;
+        } else {
+            // ランダム問題など
+            explanationHtml += `
+                <p>今回の問題は、<b>論理ゲートの組み合わせ</b> でした。</p>
+                <p>正解となる回路の各ステップでの信号変化を見てみましょう。</p>
+                <table class="w-full text-center mt-3 border border-slate-600">
+                    <thead>
+                        <tr class="bg-slate-700">
+                            ${currentStageData.inputs.map(i => `<th class="p-1 border border-slate-600">${i.id}</th>`).join('')}
+                            ${currentStageData.solutionCircuit && currentStageData.solutionCircuit.gates
+                                ? currentStageData.solutionCircuit.gates.map(g => `<th class="p-1 border border-slate-600">${g.type}<br/>(${g.id}.output)</th>`).join('')
+                                : ''
+                            }
+                            ${currentStageData.outputs.map(o => `<th class="p-1 border border-slate-600">${o.id}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+
+            currentStageData.expectedResults.forEach(res => {
+                const fullSignals = simulateCircuit(currentStageData.solutionCircuit, res.inputs);
+                explanationHtml += '<tr>';
+                currentStageData.inputs.forEach(input => {
+                    explanationHtml += `<td class="p-1 border border-slate-600">${fullSignals[input.id] ? 'ON' : 'OFF'}</td>`;
+                });
+                if (currentStageData.solutionCircuit && currentStageData.solutionCircuit.gates) {
+                    currentStageData.solutionCircuit.gates.forEach(gate => {
+                        const outputId = `${gate.id}.output`;
+                        explanationHtml += `<td class="p-1 border border-slate-600">${fullSignals[outputId] ? 'ON' : 'OFF'}</td>`;
+                    });
+                }
+                currentStageData.outputs.forEach(output => {
+                    explanationHtml += `<td class="p-1 border border-slate-600 font-bold text-amber-300">${fullSignals[output.id] ? 'ON' : 'OFF'}</td>`;
+                });
+                explanationHtml += '</tr>';
+            });
+
+            explanationHtml += `
+                    </tbody>
+                </table>
+                <p class="mt-3 text-sm text-slate-400">
+                    ※上記の表は正解回路における各ゲートの出力状態を示しています。<br/>
+                    この組み合わせで、与えられた入力を元に最終出力が生成されます。
+                </p>
+            `;
+        }
+
+        explanationContent.innerHTML = explanationHtml;
+        explanationModal.style.display = 'flex';
+    }
+
+    function closeModal() { modal.style.display = 'none'; }
+    function showModal(message) { modalMessageText.textContent = message; modal.style.display = 'flex'; }
+
+    function closeExplanationModal() {
+        explanationModal.style.display = 'none';
+        if (gameMode !== 'tutorial' || stageLevel <= tutorialStageCount) {
+            loadCurrentStage();
+        }
+    }
+    
+    // --- 以下、元のJavaScriptコード (変更なしの部分) ---
+    // (差し替えずにそのまま利用してください)
     function getFixedStage(level) {
         if (level === 1) {
             return {
@@ -331,19 +745,18 @@
                 ]
             };
         }
-        return {}; // 念のため
+        return {};
     }
     
     function generateRandomStage(level, diff) {
-        const gateTypes = ['AND', 'OR', 'NOT', 'XOR'];
+        const gateTypes = ['AND', 'OR', 'NOT', 'XOR', 'NAND', 'NOR'];
         let numGates;
         if (diff === "normal") {
             numGates = Math.max(2, Math.min(Math.floor(level / 2) + 1, 4));
         } else if (diff === "hard") {
             numGates = Math.max(3, Math.min(Math.floor(level / 2) + 2, 4));
         } else {
-            // easyやその他は従来通り
-            numGates = Math.min(Math.floor(level / 2) + 1, 4);
+            numGates = Math.min(Math.floor(level / 2) + 1, 3);
         }
         let availableGates = [], internalWires = [], gatePool = {};
 
@@ -358,7 +771,6 @@
         let availableOutputs = ['A', 'B'];
         let unconnectedGates = [...availableGates];
 
-        // ゲート間の接続をランダムに決定
         while(unconnectedGates.length > 0) {
             const gate = unconnectedGates.shift();
             const numInputs = gate.type === 'NOT' ? 1 : 2;
@@ -371,12 +783,10 @@
             availableOutputs.push(`${gate.id}.output`);
         }
         
-        // 最終的な出力を設定
         const finalOutputId = availableOutputs[availableOutputs.length - 1];
         const outputs = [{id: 'Z'}];
         internalWires.push({ from: finalOutputId, to: 'Z'});
 
-        // 期待される結果をシミュレート
         const expectedResults = [];
         [[false, false], [false, true], [true, false], [true, true]].forEach(pattern => {
             const signal = { A: pattern[0], B: pattern[1] };
@@ -391,13 +801,10 @@
                 internalWires.forEach(wire => {
                     if (currentSignals[wire.from] !== undefined && currentSignals[wire.to] === undefined) {
                         const targetGateId = wire.to.split('.')[0];
-                        const inputPinIndex = wire.to.includes('input0') ? 0 : 1;
-
                         const gate = availableGates.find(g => g.id === targetGateId);
                         if (gate) {
                             const gateInputPins = gatePool[gate.id].inputs;
                             const allInputsReady = gateInputPins.every(inputPinId => currentSignals[inputPinId] !== undefined);
-
                             if (allInputsReady) {
                                 const gateInputs = gateInputPins.map(inputPinId => currentSignals[inputPinId]);
                                 currentSignals[`${gate.id}.output`] = calculateGateOutput(gate.type, gateInputs);
@@ -411,44 +818,25 @@
                 });
                 safetyCounter++;
             }
-
             expectedResults.push({ inputs: { A: pattern[0], B: pattern[1] }, outputs: { Z: currentSignals['Z'] } });
         });
 
-        // ゲートのIDを「gate1」「gate2」のように連番にリマップ
-        const remappedAvailableGates = availableGates.map((gate, index) => ({
-            type: gate.type,
-            id: `gate${index + 1}`
-        }));
-
-        // 期待される結果を計算するための「正解回路」情報を追加
+        const remappedAvailableGates = availableGates.map((gate, index) => ({ type: gate.type, id: `gate${index + 1}` }));
         const solutionCircuit = {
-            gates: remappedAvailableGates.map((gate, index) => ({
-                id: gate.id,
-                type: gate.type,
-            })),
+            gates: remappedAvailableGates.map(g => ({ id: g.id, type: g.type })),
             wires: internalWires.map(wire => {
-                let from = wire.from;
-                let to = wire.to;
-
+                let from = wire.from, to = wire.to;
                 remappedAvailableGates.forEach((g, index) => {
                     const originalId = availableGates[index].id;
-                    if (from.startsWith(originalId)) {
-                        from = from.replace(originalId, g.id);
-                    }
-                    if (to.startsWith(originalId)) {
-                        to = to.replace(originalId, g.id);
-                    }
+                    if (from.startsWith(originalId)) from = from.replace(originalId, g.id);
+                    if (to.startsWith(originalId)) to = to.replace(originalId, g.id);
                 });
                 return { from, to };
             })
         };
-
         return { availableGates: remappedAvailableGates, inputs, outputs, expectedResults, solutionCircuit };
     }
 
-
-    // --- 描画関数 ---
     function drawProblemDescription() {
         let html = '<p class="text-slate-300 mb-2">下のゲートをすべて使って、指定の出力を再現しよう。</p>';
         html += '<table class="w-full text-center">';
@@ -546,7 +934,6 @@
         circuitCanvasEl.appendChild(g);
     }
     
-    // --- マウスイベント処理 ---
     function getMousePosition(evt) {
         svgPoint.x = evt.clientX;
         svgPoint.y = evt.clientY;
@@ -723,18 +1110,19 @@
     function getPinType(pinId) {
         if (pinId.includes('.output')) return 'output';
         if (pinId.includes('.input')) return 'input';
-        if (currentStageData.inputs.some(i => i.id === pinId)) return 'output'; // 入力ノードは出力ピンとして機能
-        if (currentStageData.outputs.some(o => o.id === pinId)) return 'input'; // 出力ノードは入力ピンとして機能
+        if (currentStageData.inputs.some(i => i.id === pinId)) return 'output';
+        if (currentStageData.outputs.some(o => o.id === pinId)) return 'input';
         return 'unknown';
     }
     
-    // --- シミュレーションと解答チェック ---
     function calculateGateOutput(type, inputs) {
         switch (type) {
             case 'NOT': return !inputs[0];
             case 'AND': return inputs[0] && inputs[1];
             case 'OR':  return inputs[0] || inputs[1];
             case 'XOR': return inputs[0] !== inputs[1];
+            case 'NAND': return !(inputs[0] && inputs[1]);
+            case 'NOR':  return !(inputs[0] || inputs[1]);
             default: return false;
         }
     }
@@ -761,7 +1149,7 @@
                         } else {
                             allInputsReady = false;
                         }
-                    } else { // AND, OR, XOR
+                    } else {
                         const input0PinId = `${gate.id}.input0`;
                         const input1PinId = `${gate.id}.input1`;
                         const connectedWire0 = inputWires.find(w => w.to === input0PinId);
@@ -796,179 +1184,11 @@
         }
         return signals;
     }
-
-
-    function checkSolution() {
-        const usedGateCount = userCircuit.gates.length;
-        const availableGateCount = currentStageData.availableGates.length;
-        if (usedGateCount !== availableGateCount) {
-            showModal(`ツールボックスのゲートを全て使ってください。現在 ${usedGateCount} / ${availableGateCount} 個使用しています。`);
-            return;
-        }
-
-        let allPatternsPass = true;
-        for (const testCase of currentStageData.expectedResults) {
-            const resultSignals = simulateCircuit(userCircuit, testCase.inputs);
-            for (const output of currentStageData.outputs) {
-                const actualOutput = resultSignals[output.id];
-                if (actualOutput !== testCase.outputs[output.id]) {
-                    allPatternsPass = false; break;
-                }
-            }
-            if (!allPatternsPass) break;
-        }
-
-        if (allPatternsPass) {
-            stopTimer(); // 正解したらタイマーを停止
-            const elapsedTime = getElapsedTimeInSeconds();
-            const timeBonus = Math.max(1, 100 - Math.floor(elapsedTime / 2)); // 経過時間に応じてボーナスを減点、最低1点
-            const stageScore = (10 * stageLevel) + timeBonus;
-            score += stageScore;
-
-            const clearedStageLevel = stageLevel;
-            stageLevel++;
-
-            savedRandomStageData = null;
-            showExplanationModal(clearedStageLevel, stageScore, elapsedTime, timeBonus); // 時間情報を渡す
-
-            // チュートリアル終了時
-            if (difficulty === "tutorial" && stageLevel > tutorialStageCount) {
-                setTimeout(() => {
-                    // まず難易度選択モーダルを隠す
-                    difficultyModal.style.display = 'none';
-                    // 先に「お疲れさまでした」モーダルを表示
-                    showModal("チュートリアルクリア！お疲れさまでした。他の難易度にも挑戦してみましょう！");
-                    // OKボタン押下時に難易度選択モーダルを再表示
-                    modalCloseButton.onclick = () => {
-                        closeModal();
-                        difficultyModal.style.display = 'flex';
-                    };
-                }, 500);
-            }
-        } else {
-            showModal('不正解です。回路の接続を見直してください。');
-        }
-    }
     
-    // --- モーダル表示関数 ---
-    function closeModal() { modal.style.display = 'none'; }
-    function showModal(message) { modalMessageText.textContent = message; modal.style.display = 'flex'; }
-
-    function showExplanationModal(clearedStageLevel, stageScore, elapsedTime, timeBonus) {
-        let explanationHtml = `<p class="mb-3">ステージ${clearedStageLevel}をクリアしました！ お見事です！</p>`;
-        explanationHtml += `<p class="mb-3">獲得スコア: ${stageScore} (時間ボーナス: ${timeBonus})</p>`;
-        explanationHtml += `<p class="mb-3">クリアタイム: ${String(Math.floor(elapsedTime / 60)).padStart(2, '0')}:${String(elapsedTime % 60).padStart(2, '0')}</p>`;
-        
-        if (clearedStageLevel === 1) {
-            explanationHtml += `
-                <p>このステージでは **NOTゲート** を使いましたね。</p>
-                <p>NOTゲートは、入力と出力が逆になります。</p>
-                <p>ON (真) が入力されれば OFF (偽) に、OFF (偽) が入力されれば ON (真) になります。</p>
-                <table class="w-full text-center mt-3 border border-slate-600">
-                    <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力 A</th><th class="p-1 border border-slate-600">出力 X</th></tr></thead>
-                    <tbody>
-                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
-                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                    </tbody>
-                </table>
-            `;
-        } else if (clearedStageLevel === 2) {
-            explanationHtml += `
-                <p>このステージでは **ANDゲート** を使いました。</p>
-                <p>ANDゲートは、全ての入力がONの時に限り出力がONになります。</p>
-                <table class="w-full text-center mt-3 border border-slate-600">
-                    <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力 A</th><th class="p-1 border border-slate-600">入力 B</th><th class="p-1 border border-slate-600">出力 Y</th></tr></thead>
-                    <tbody>
-                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
-                    </tbody>
-                </table>
-            `;
-        } else if (clearedStageLevel === 3) {
-            explanationHtml += `
-                <p>このステージでは **ORゲート** を使いました。</p>
-                <p>ORゲートは、いずれかの入力がONの時に出力がONになります。</p>
-                <table class="w-full text-center mt-3 border border-slate-600">
-                    <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力 A</th><th class="p-1 border border-slate-600">入力 B</th><th class="p-1 border border-slate-600">出力 Z</th></tr></thead>
-                    <tbody>
-                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
-                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
-                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
-                    </tbody>
-                </table>
-            `;
-        } else if (clearedStageLevel === 4) {
-            explanationHtml += `
-                <p>このステージでは **XORゲート** を使いました。</p>
-                <p>XORゲートは、入力のいずれか一方がONの時に出力がONになります。</p>
-                <table class="w-full text-center mt-3 border border-slate-600">
-                    <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力 A</th><th class="p-1 border border-slate-600">入力 B</th><th class="p-1 border border-slate-600">出力 Z</th></tr></thead>
-                    <tbody>
-                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
-                        <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
-                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                    </tbody>
-                </table>
-            `;
-        } else {
-            explanationHtml += `
-                <p>今回の問題は、**論理ゲートの組み合わせ** でした。</p>
-                <p>正解となる回路の各ステップでの信号変化を見てみましょう。</p>
-                <table class="w-full text-center mt-3 border border-slate-600">
-                    <thead>
-                        <tr class="bg-slate-700">
-                            ${currentStageData.inputs.map(i => `<th class="p-1 border border-slate-600">${i.id}</th>`).join('')}
-                            ${currentStageData.solutionCircuit.gates.map(g => `<th class="p-1 border border-slate-600">${g.type}<br/>(${g.id}.output)</th>`).join('')}
-                            ${currentStageData.outputs.map(o => `<th class="p-1 border border-slate-600">${o.id}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            currentStageData.expectedResults.forEach(res => {
-                const fullSignals = simulateCircuit(currentStageData.solutionCircuit, res.inputs);
-                explanationHtml += '<tr>';
-                currentStageData.inputs.forEach(input => {
-                    explanationHtml += `<td class="p-1 border border-slate-600">${fullSignals[input.id] ? 'ON' : 'OFF'}</td>`;
-                });
-                currentStageData.solutionCircuit.gates.forEach(gate => {
-                    const outputId = `${gate.id}.output`;
-                    explanationHtml += `<td class="p-1 border border-slate-600">${fullSignals[outputId] ? 'ON' : 'OFF'}</td>`;
-                });
-                currentStageData.outputs.forEach(output => {
-                    explanationHtml += `<td class="p-1 border border-slate-600 font-bold text-amber-300">${fullSignals[output.id] ? 'ON' : 'OFF'}</td>`;
-                });
-                explanationHtml += '</tr>';
-            });
-
-            explanationHtml += `
-                    </tbody>
-                </table>
-                <p class="mt-3 text-sm text-slate-400">
-                    ※上記の表は正解回路における各ゲートの出力状態を示しています。<br/>
-                    この組み合わせで、与えられた入力を元に最終出力が生成されます。
-                </p>
-            `;
-        }
-
-        explanationContent.innerHTML = explanationHtml;
-        explanationModal.style.display = 'flex';
-    }
-
-    function closeExplanationModal() {
-        explanationModal.style.display = 'none';
-        loadStage(stageLevel); // 次のステージをロード
-    }
-
+    // ▼▼▼ 変更点 ▼▼▼ チュートリアルステージの定義を修正
     function getTutorialStage(level) {
-        // 1,2問目は既存のgetFixedStageを流用
         if (level === 1) return getFixedStage(1);
         if (level === 2) return getFixedStage(2);
-        // 3問目: ORゲート
         if (level === 3) {
             return {
                 availableGates: [{ type: 'OR', id: 'fixed_or1' }],
@@ -979,188 +1199,234 @@
                     { inputs: { A: false, B: true }, outputs: { Z: true } },
                     { inputs: { A: true, B: true }, outputs: { Z: true } }
                 ],
-                solutionCircuit: {
-                    gates: [{ id: 'fixed_or1', type: 'OR' }],
-                    wires: [
-                        { from: 'A', to: 'fixed_or1.input0' },
-                        { from: 'B', to: 'fixed_or1.input1' },
-                        { from: 'fixed_or1.output', to: 'Z' }
-                    ]
-                }
+                solutionCircuit: { gates: [{ id: 'fixed_or1', type: 'OR' }], wires: [ { from: 'A', to: 'fixed_or1.input0' }, { from: 'B', to: 'fixed_or1.input1' }, { from: 'fixed_or1.output', to: 'Z' } ] }
             };
         }
-        // 4問目: XORゲート
         if (level === 4) {
             return {
                 availableGates: [{ type: 'XOR', id: 'fixed_xor1' }],
                 inputs: [{ id: 'A' }, { id: 'B' }], outputs: [{ id: 'Z' }],
                 expectedResults: [
-                    { inputs: { A: false, B: false }, outputs: { Z: false } },
-                    { inputs: { A: true, B: false }, outputs: { Z: true } },
-                    { inputs: { A: false, B: true }, outputs: { Z: true } },
-                    { inputs: { A: true, B: true }, outputs: { Z: false } }
+                    { inputs: { A: false, B: false }, outputs: { Z: false } }, { inputs: { A: true, B: false }, outputs: { Z: true } },
+                    { inputs: { A: false, B: true }, outputs: { Z: true } }, { inputs: { A: true, B: true }, outputs: { Z: false } }
                 ],
-                solutionCircuit: {
-                    gates: [{ id: 'fixed_xor1', type: 'XOR' }],
-                    wires: [
-                        { from: 'A', to: 'fixed_xor1.input0' },
-                        { from: 'B', to: 'fixed_xor1.input1' },
-                        { from: 'fixed_xor1.output', to: 'Z' }
-                    ]
-                }
+                solutionCircuit: { gates: [{ id: 'fixed_xor1', type: 'XOR' }], wires: [ { from: 'A', to: 'fixed_xor1.input0' }, { from: 'B', to: 'fixed_xor1.input1' }, { from: 'fixed_xor1.output', to: 'Z' } ] }
             };
         }
-        // 5問目: AND+NOT（NAND相当）
-        if (level === 5) {
+        if (level === 5) { // 新しいNANDステージ
             return {
-                availableGates: [
-                    { type: 'AND', id: 'fixed_and2' },
-                    { type: 'NOT', id: 'fixed_not2' }
-                ],
+                availableGates: [{ type: 'NAND', id: 'fixed_nand1' }],
                 inputs: [{ id: 'A' }, { id: 'B' }], outputs: [{ id: 'Z' }],
                 expectedResults: [
-                    { inputs: { A: false, B: false }, outputs: { Z: true } },
-                    { inputs: { A: true, B: false }, outputs: { Z: true } },
-                    { inputs: { A: false, B: true }, outputs: { Z: true } },
-                    { inputs: { A: true, B: true }, outputs: { Z: false } }
+                    { inputs: { A: false, B: false }, outputs: { Z: true } }, { inputs: { A: true, B: false }, outputs: { Z: true } },
+                    { inputs: { A: false, B: true }, outputs: { Z: true } }, { inputs: { A: true, B: true }, outputs: { Z: false } }
                 ],
-                solutionCircuit: {
-                    gates: [
-                        { id: 'fixed_and2', type: 'AND' },
-                        { id: 'fixed_not2', type: 'NOT' }
-                    ],
-                    wires: [
-                        { from: 'A', to: 'fixed_and2.input0' },
-                        { from: 'B', to: 'fixed_and2.input1' },
-                        { from: 'fixed_and2.output', to: 'fixed_not2.input0' },
-                        { from: 'fixed_not2.output', to: 'Z' }
-                    ]
-                }
+                solutionCircuit: { gates: [{ id: 'fixed_nand1', type: 'NAND' }], wires: [ { from: 'A', to: 'fixed_nand1.input0' }, { from: 'B', to: 'fixed_nand1.input1' }, { from: 'fixed_nand1.output', to: 'Z' } ] }
             };
         }
-        // 6問目以降は終了
-        return {
-            availableGates: [],
-            inputs: [],
-            outputs: [],
-            expectedResults: []
-        };
+        if (level === 6) { // 新しいNORステージ
+            return {
+                availableGates: [{ type: 'NOR', id: 'fixed_nor1' }],
+                inputs: [{ id: 'A' }, { id: 'B' }], outputs: [{ id: 'Z' }],
+                expectedResults: [
+                    { inputs: { A: false, B: false }, outputs: { Z: true } }, { inputs: { A: true, B: false }, outputs: { Z: false } },
+                    { inputs: { A: false, B: true }, outputs: { Z: false } }, { inputs: { A: true, B: true }, outputs: { Z: false } }
+                ],
+                solutionCircuit: { gates: [{ id: 'fixed_nor1', type: 'NOR' }], wires: [ { from: 'A', to: 'fixed_nor1.input0' }, { from: 'B', to: 'fixed_nor1.input1' }, { from: 'fixed_nor1.output', to: 'Z' } ] }
+            };
+        }
+        if (level === 7) { // 組み合わせステージ（旧ステージ5）
+            return {
+                availableGates: [ { type: 'AND', id: 'fixed_and2' }, { type: 'NOT', id: 'fixed_not2' } ],
+                inputs: [{ id: 'A' }, { id: 'B' }], outputs: [{ id: 'Z' }],
+                expectedResults: [
+                    { inputs: { A: false, B: false }, outputs: { Z: true } }, { inputs: { A: true, B: false }, outputs: { Z: true } },
+                    { inputs: { A: false, B: true }, outputs: { Z: true } }, { inputs: { A: true, B: true }, outputs: { Z: false } }
+                ],
+                solutionCircuit: { gates: [ { id: 'fixed_and2', type: 'AND' }, { id: 'fixed_not2', type: 'NOT' } ], wires: [ { from: 'A', to: 'fixed_and2.input0' }, { from: 'B', to: 'fixed_and2.input1' }, { from: 'fixed_and2.output', to: 'fixed_not2.input0' }, { from: 'fixed_not2.output', to: 'Z' } ] }
+            };
+        }
+        return { availableGates: [], inputs: [], outputs: [], expectedResults: [] };
     }
 
-    // --- ゲート説明データ ---
-const gateTutorials = [
-    {
-        title: "NOTゲート（否定）",
-        body: `
-            <p>NOTゲートは入力の値を反転します。</p>
-            <ul class="list-disc ml-5 my-2">
-                <li>入力がON（真）のとき、出力はOFF（偽）</li>
-                <li>入力がOFF（偽）のとき、出力はON（真）</li>
-            </ul>
-            <table class="w-full text-center mt-2 border border-slate-600">
-                <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力</th><th class="p-1 border border-slate-600">出力</th></tr></thead>
-                <tbody>
-                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
-                </tbody>
-            </table>
-        `
-    },
-    {
-        title: "ANDゲート（論理積）",
-        body: `
-            <p>ANDゲートはすべての入力がON（真）のときだけ出力がONになります。</p>
-            <table class="w-full text-center mt-2 border border-slate-600">
-                <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力A</th><th class="p-1 border border-slate-600">入力B</th><th class="p-1 border border-slate-600">出力</th></tr></thead>
-                <tbody>
-                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
-                </tbody>
-            </table>
-        `
-    },
-    {
-        title: "ORゲート（論理和）",
-        body: `
-            <p>ORゲートはどちらか一方でも入力がON（真）なら出力がONになります。</p>
-            <table class="w-full text-center mt-2 border border-slate-600">
-                <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力A</th><th class="p-1 border border-slate-600">入力B</th><th class="p-1 border border-slate-600">出力</th></tr></thead>
-                <tbody>
-                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
-                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
-                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
-                </tbody>
-            </table>
-        `
-    },
-    {
-        title: "XORゲート（排他的論理和）",
-        body: `
-            <p>XORゲートは入力が異なるときだけ出力がON（真）になります。</p>
-            <table class="w-full text-center mt-2 border border-slate-600">
-                <thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力A</th><th class="p-1 border border-slate-600">入力B</th><th class="p-1 border border-slate-600">出力</th></tr></thead>
-                <tbody>
-                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr>
-                    <tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
-                    <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
-                </tbody>
-            </table>
-        `
+    const gateTutorials = [
+        { title: "NOTゲート（否定）", body: `<p>NOTゲートは入力の値を反転します。</p><ul class="list-disc ml-5 my-2"><li>入力がON（真）のとき、出力はOFF（偽）</li><li>入力がOFF（偽）のとき、出力はON（真）</li></ul><table class="w-full text-center mt-2 border border-slate-600"><thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力</th><th class="p-1 border border-slate-600">出力</th></tr></thead><tbody><tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr><tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr></tbody></table>`},
+        { title: "ANDゲート（論理積）", body: `<p>ANDゲートはすべての入力がON（真）のときだけ出力がONになります。</p><table class="w-full text-center mt-2 border border-slate-600"><thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力A</th><th class="p-1 border border-slate-600">入力B</th><th class="p-1 border border-slate-600">出力</th></tr></thead><tbody><tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr><tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr><tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr>
+                        <tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                    </tbody>
+                </table>` },
+        { title: "ORゲート（論理和）", body: `<p>ORゲートはどちらか一方でも入力がON（真）なら出力がONになります。</p><table class="w-full text-center mt-2 border border-slate-600"><thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力A</th><th class="p-1 border border-slate-600">入力B</th><th class="p-1 border border-slate-600">出力</th></tr></thead><tbody><tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr><tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr><tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr><tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr>
+                    </tbody>
+                </table>` },
+        { title: "XORゲート（排他的論理和）", body: `<p>XORゲートは入力が異なるときだけ出力がON（真）になります。</p><table class="w-full text-center mt-2 border border-slate-600"><thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力A</th><th class="p-1 border border-slate-600">入力B</th><th class="p-1 border border-slate-600">出力</th></tr></thead><tbody><tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr><tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr><tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr><tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr></tbody></table>` },
+        { title: "NANDゲート（否定論理積）", body: `<p>NANDゲートはANDゲートの逆です。両方の入力がONのときだけOFFになります。</p><table class="w-full text-center mt-2 border border-slate-600"><thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力A</th><th class="p-1 border border-slate-600">入力B</th><th class="p-1 border border-slate-600">出力</th></tr></thead><tbody><tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr><tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr><tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td></tr><tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr></tbody></table>` },
+        { title: "NORゲート（否定論理和）", body: `<p>NORゲートはORゲートの逆です。両方の入力がOFFのときだけONになります。</p><table class="w-full text-center mt-2 border border-slate-600"><thead><tr class="bg-slate-700"><th class="p-1 border border-slate-600">入力A</th><th class="p-1 border border-slate-600">入力B</th><th class="p-1 border border-slate-600">出力</th></tr></thead><tbody><tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td></tr><tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">OFF</td></tr><tr><td class="p-1 border border-slate-600">OFF</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr><tr><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">ON</td><td class="p-1 border border-slate-600">OFF</td></tr></tbody></table>` }
+    ];
+
+    let gateInfoModal, gateInfoTitle, gateInfoBody, gateInfoCloseButton, gateInfoPrevButton, gateInfoNextTabButton;
+    let gateInfoIndex = 0;
+    let isGateInfoOnly = false;
+
+    function showGateInfoSequence(gateInfoOnly = false) {
+        gateInfoIndex = 0;
+        isGateInfoOnly = gateInfoOnly;
+        showGateInfoModal(gateInfoIndex);
     }
-];
 
-let gateInfoModal, gateInfoTitle, gateInfoBody, gateInfoNextButton;
-let gateInfoIndex = 0;
-let isGateInfoOnly = false; // ← 追加
-
-function showGateInfoSequence(gateInfoOnly = false) {
-    gateInfoIndex = 0;
-    isGateInfoOnly = gateInfoOnly; // ← 追加
-    showGateInfoModal(gateInfoIndex);
-}
-
-function showGateInfoModal(index) {
-    gateInfoTitle.innerHTML = gateTutorials[index].title;
-    gateInfoBody.innerHTML = gateTutorials[index].body;
-    gateInfoModal.style.display = 'flex';
-    if (index === gateTutorials.length - 1) {
-        gateInfoNextButton.textContent = isGateInfoOnly ? "問題へ戻る" : "チュートリアル開始";
-    } else {
-        gateInfoNextButton.textContent = "次へ";
+    function showGateInfoModal(index) {
+        gateInfoTitle.innerHTML = gateTutorials[index].title;
+        gateInfoBody.innerHTML = gateTutorials[index].body;
+        gateInfoModal.style.display = 'flex';
     }
-}
 
-function closeGateInfoModal() {
-    gateInfoModal.style.display = 'none';
-}
+    function closeGateInfoModal() {
+        gateInfoModal.style.display = 'none';
+    }
 
-function setupGateInfoModal() {
-    gateInfoModal = document.getElementById('gateInfoModal');
-    gateInfoTitle = document.getElementById('gateInfoTitle');
-    gateInfoBody = document.getElementById('gateInfoBody');
-    gateInfoNextButton = document.getElementById('gateInfoNextButton');
-<<<<<<< HEAD
-    gateInfoNextButton.addEventListener('click', () => {
-        gateInfoIndex++;
-        if (gateInfoIndex < gateTutorials.length) {
-            showGateInfoModal(gateInfoIndex);
-        } else {
+    function setupGateInfoModal() {
+        gateInfoModal = document.getElementById('gateInfoModal');
+        gateInfoTitle = document.getElementById('gateInfoTitle');
+        gateInfoBody = document.getElementById('gateInfoBody');
+        gateInfoCloseButton = document.getElementById('gateInfoCloseButton');
+        gateInfoPrevButton = document.getElementById('gateInfoPrevButton');
+        gateInfoNextTabButton = document.getElementById('gateInfoNextTabButton');
+
+        gateInfoCloseButton.addEventListener('click', () => {
             closeGateInfoModal();
             if (!isGateInfoOnly) {
-                loadStage(1); // チュートリアル1問目開始
+                gameMode = 'tutorial';
+                difficulty = 'tutorial';
+                stageLevel = 1;
+                score = 0;
+                updateUIForNewGame();
+                loadStage(1);
             }
-            // isGateInfoOnly時は何もしない（モーダルを閉じるだけ）
+        });
+
+        gateInfoPrevButton.addEventListener('click', () => {
+            gateInfoIndex = (gateInfoIndex - 1 + gateTutorials.length) % gateTutorials.length;
+            showGateInfoModal(gateInfoIndex);
+        });
+
+        gateInfoNextTabButton.addEventListener('click', () => {
+            gateInfoIndex = (gateInfoIndex + 1) % gateTutorials.length;
+            showGateInfoModal(gateInfoIndex);
+        });
+    }
+
+    // --- ハイスコア管理 ---
+const HIGH_SCORE_KEY = "logicGateHighScores";
+function getHighScores() {
+    const data = localStorage.getItem(HIGH_SCORE_KEY);
+    if (!data) return { infinite: [], timeAttack: [] };
+    try {
+        return JSON.parse(data);
+    } catch {
+        return { infinite: [], timeAttack: [] };
+    }
+}
+function saveHighScores(scores) {
+    localStorage.setItem(HIGH_SCORE_KEY, JSON.stringify(scores));
+}
+function addHighScore(mode, score) {
+    if (mode === "tutorial") return false;
+    const scores = getHighScores();
+    if (!scores[mode]) scores[mode] = [];
+    scores[mode].push({ score, date: new Date().toLocaleString() });
+    scores[mode].sort((a, b) => b.score - a.score);
+    if (scores[mode].length > 10) scores[mode] = scores[mode].slice(0, 10);
+    saveHighScores(scores);
+    // 追加したスコアが10位以内か判定
+    return scores[mode].some(s => s.score === score && s.date === scores[mode][scores[mode].indexOf(s)].date);
+}
+function getHighScoreRank(mode, score) {
+    if (mode === "tutorial") return null;
+    const scores = getHighScores();
+    if (!scores[mode]) return null;
+    const idx = scores[mode].findIndex(s => s.score === score);
+    return idx >= 0 ? idx + 1 : null;
+}
+
+// --- ハイスコア表示 ---
+function showHighScoreModal() {
+    const scores = getHighScores();
+    let html = '';
+    ["infinite", "timeAttack"].forEach(mode => {
+        html += `<h4 class="font-bold text-lg mt-2 mb-1 text-sky-300">${mode === "infinite" ? "無限モード" : "タイムアタック"}</h4>`;
+        if (scores[mode] && scores[mode].length > 0) {
+            html += `<ol class="list-decimal ml-6 mb-2">`;
+            scores[mode].forEach((s, i) => {
+                html += `<li>${s.score}点 <span class="text-xs text-slate-400">(${s.date})</span></li>`;
+            });
+            html += `</ol>`;
+        } else {
+            html += `<p class="text-slate-400 mb-2">記録なし</p>`;
         }
     });
+    document.getElementById('highScoreContent').innerHTML = html;
+    document.getElementById('highScoreModal').style.display = 'flex';
 }
-=======
-    // ここでイベントリスナーは設定しない（loadStageや難易度選択時に都度設定する）
+
+// --- DOMContentLoaded内にイベント追加 ---
+document.addEventListener('DOMContentLoaded', () => {
+    // ...既存の初期化...
+    const infiniteEndButton = document.getElementById('infiniteEndButton');
+    const modeSelectModal = document.getElementById('modeSelectModal');
+    const resultModal = document.getElementById('resultModal');
+
+    // 無限モード時のみ終了ボタン表示
+    function updateInfiniteEndButton() {
+        if (gameMode === 'infinite') {
+            infiniteEndButton.style.display = 'block';
+        } else {
+            infiniteEndButton.style.display = 'none';
+        }
     }
->>>>>>> 53c8ef434a26c82db00736c586bd577420204cbb
-    </script>
+
+    // ゲーム開始時にボタン表示を更新
+    const origStartGame = window.startGame || startGame;
+    window.startGame = function() {
+        origStartGame.apply(this, arguments);
+        updateInfiniteEndButton();
+    };
+
+    // 終了ボタン押下時
+    infiniteEndButton.addEventListener('click', () => {
+        // 無限モードのスコア処理
+        gameOver("無限モード終了");
+        infiniteEndButton.style.display = 'none';
+    });
+
+    // スコアウィンドウ閉じたらモード選択に戻る
+    document.getElementById('resultCloseButton').addEventListener('click', () => {
+        resultModal.style.display = 'none';
+        modeSelectModal.style.display = 'flex';
+        infiniteEndButton.style.display = 'none';
+    });
+
+    // ゲーム終了時にもボタンを消す
+    const origGameOver = window.gameOver || gameOver;
+    window.gameOver = function() {
+        origGameOver.apply(this, arguments);
+        infiniteEndButton.style.display = 'none';
+    };
+    
+    const highScoreModal = document.getElementById('highScoreModal');
+    const viewHighScoreButton = document.getElementById('viewHighScoreButton');
+    const highScoreCloseButton = document.getElementById('highScoreCloseButton');
+
+    // スコア表示ボタンでスコアウィンドウを開く
+    viewHighScoreButton.addEventListener('click', () => {
+        modeSelectModal.style.display = 'none';
+        showHighScoreModal();
+    });
+
+    // スコアウィンドウの閉じるでモード選択に戻る
+    highScoreCloseButton.addEventListener('click', () => {
+        highScoreModal.style.display = 'none';
+        modeSelectModal.style.display = 'flex';
+    });
+});
+</script>
 </body>
 </html>
